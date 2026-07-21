@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin · Clients</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="style-admin.css">
+</head>
+<body>
+    <div id="admin-content">
+        <header>
+            <h2>Gestion des clients</h2>
+            <div class="header-user">
+                <span id="user-email"></span>
+                <span id="user-role" class="user-role-badge"></span>
+                <button id="btn-logout" class="btn-logout">Déconnexion</button>
+            </div>
+        </header>
+        <main>
+            <nav>
+                <a href="admin.html" class="tab-btn"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                <a href="admin-reservations.html" class="tab-btn"><i class="fas fa-calendar-check"></i> Réservations</a>
+                <a href="admin-maintenance.html" class="tab-btn"><i class="fas fa-tools"></i> Maintenance</a>
+                <a href="admin-clients.html" class="tab-btn active"><i class="fas fa-users"></i> Clients</a>
+            </nav>
+            <div class="content-area">
+                <div class="filters-bar">
+                    <input type="text" id="search-client" placeholder="Rechercher un client par nom ou téléphone...">
+                </div>
+                <table style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Téléphone</th>
+                            <th>Nb. Réservations</th>
+                            <th>Total Dépensé</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clients-body">
+                        <tr><td colspan="5">Chargement…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modale pour l'historique client -->
+    <div id="modal-client-history" class="modal-overlay">
+        <div class="modal-content" style="max-width: 700px;">
+            <span class="close-modal" onclick="closeModal('modal-client-history')">&times;</span>
+            <h3>Historique de <span id="client-history-name"></span></h3>
+            <div class="history-total" style="margin-bottom: 20px;">
+                Total dépensé : <strong id="client-history-total">0 Ar</strong>
+            </div>
+            <ul id="client-history-list" class="history-list">
+                <!-- L'historique détaillé sera injecté ici -->
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
+    <script src="admin-clients.js"></script>
+</body>
+</html>

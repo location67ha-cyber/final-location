@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portail Location Tana</title>
+    <link rel="stylesheet" href="style-admin.css">
+</head>
+<body>
+    <div id="login-screen">
+        <div class="login-card">
+            <img src="https://i.ibb.co/dw8gxWXL/1765001359376.png" alt="Logo" style="height: 50px; display: block; margin: 0 auto 20px;">
+            <h1 style="text-align: center; font-size: 1.5rem; margin-bottom: 20px;">Portail sécurisé</h1>
+            <p style="text-align: center; color: #bdc3c7; margin-top: -10px; margin-bottom: 25px;">Accès à la gestion de la flotte.</p>
+            <form id="login-form">
+                <div>
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div style="margin-top: 15px;">
+                    <label for="login-password">Mot de passe</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit">Connexion</button>
+                <p id="login-feedback" style="text-align: center; margin-top: 15px;"></p>
+            </form>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="login.js"></script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin · Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="style-admin.css">
+</head>
+<body>
+    <div id="admin-content">
+        <header>
+            <h2>Dashboard général</h2>
+            <div class="header-user">
+                <span id="user-email"></span>
+                <span id="user-role" class="user-role-badge"></span>
+                <button id="btn-logout" class="btn-logout">Déconnexion</button>
+            </div>
+        </header>
+        <main>
+            <nav>
+                <a href="admin.html" class="tab-btn active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                <a href="admin-reservations.html" class="tab-btn"><i class="fas fa-calendar-check"></i> Réservations</a>
+                <a href="admin-maintenance.html" class="tab-btn"><i class="fas fa-tools"></i> Maintenance</a>
+                <a href="admin-clients.html" class="tab-btn"><i class="fas fa-users"></i> Clients</a>
+            </nav>
+            <div class="content-area">
+                <button class="btn-full btn-primaire" onclick="openCarModal()">+ Ajouter une voiture</button>
+                <div id="grid-voitures" class="card-grid" style="margin-top: 20px;">
+                    Chargement du tableau de bord...
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modale pour ajouter/modifier une voiture -->
+    <div id="car-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('car-modal')">&times;</span>
+            <h3 id="car-modal-title">Nouvelle voiture</h3>
+            <form id="car-form" onsubmit="submitCar(event)">
+                <input type="hidden" id="car-id">
+                <div class="grid-form">
+                    <div><label>Marque</label><input type="text" id="car-marque" required></div>
+                    <div><label>Modèle</label><input type="text" id="car-modele" required></div>
+                    <div><label>Immatriculation</label><input type="text" id="car-immatriculation"></div>
+                    <div><label>Nombre de places</label><input type="number" id="car-places" value="5"></div>
+                    <div><label>Transmission</label><select id="car-transmission"><option>Manuelle</option><option>Automatique</option></select></div>
+                    <div><label>Carburant</label><select id="car-carburant"><option>Essence</option><option>Diesel</option></select></div>
+                </div>
+                <hr>
+                <h4>Tarification & Modèle</h4>
+                <div>
+                    <label>Modèle de chauffeur</label>
+                    <select id="car-modele-chauffeur">
+                        <option value="mixte">Mixte (Avec ET Sans chauffeur)</option>
+                        <option value="sans_chauffeur_special">Spécial Sans Chauffeur (optionnel)</option>
+                        <option value="avec_chauffeur_inclus">Avec Chauffeur Inclus</option>
+                    </select>
+                </div>
+                <div class="grid-form" style="margin-top:15px;">
+                    <div><label>Prix 12h (sans ch.)</label><input type="number" id="car-prix-12h-sans-chauffeur"></div>
+                    <div><label>Prix 24h (sans ch.)</label><input type="number" id="car-prix-24h-sans-chauffeur"></div>
+                    <div><label>Prix 12h (avec ch.)</label><input type="number" id="car-prix-12h-avec-chauffeur"></div>
+                    <div><label>Prix 24h (avec ch.)</label><input type="number" id="car-prix-24h-avec-chauffeur"></div>
+                    <div><label>Supplément Chauffeur</label><input type="number" id="car-prix-option-chauffeur"></div>
+                </div>
+                <hr>
+                <h4>Affichage public</h4>
+                <div><label>URL de l'image</label><input type="text" id="car-image-url"></div>
+                <div><label>Description</label><textarea id="car-description" rows="3"></textarea></div>
+                <div>
+                    <input type="checkbox" id="car-disponible-province">
+                    <label for="car-disponible-province">Disponible pour les provinces (sur devis)</label>
+                </div>
+                <p id="car-feedback"></p>
+                <button type="submit" class="btn-full">Enregistrer</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

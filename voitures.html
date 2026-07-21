@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalogue · Location Tana</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+    <link rel="stylesheet" href="style-ui.css">
+</head>
+<body>
+    <header class="navbar">
+        <a href="index.html" class="logo-container">
+            <img id="header-logo" src="" alt="Logo" class="nav-logo">
+            <span id="header-site-name"></span>
+        </a>
+        <button class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+        <ul class="nav-links" id="nav-menu">
+            <li><a href="index.html">Accueil</a></li>
+            <li><a href="voitures.html" class="active">Nos voitures</a></li>
+            <li><a href="login.html" class="btn-action btn-sec">Portail admin</a></li>
+        </ul>
+    </header>
+
+    <main>
+        <section class="page-section">
+            <h1 class="section-title" style="color:white;">Notre Flotte</h1>
+            <div id="container-voitures" class="grid-voitures">
+                <!-- Les cartes des modèles de voitures seront chargées ici -->
+            </div>
+        </section>
+
+        <section id="reservation-section" class="page-section" style="display: none;">
+            <h2 class="section-title" style="color:white;">Réservation pour <span id="nom-voiture-selectionnee"></span></h2>
+            <div class="container-form">
+                <div class="grid-form">
+                    <div>
+                        <label for="date-debut">Date de départ</label>
+                        <input type="date" id="date-debut" onchange="calculerPrix()">
+                    </div>
+                    <div>
+                        <label for="heure-depart">Heure de départ</label>
+                        <select id="heure-depart" onchange="calculerPrix()">
+                            <option value="07:00">7h</option>
+                            <option value="19:00">19h</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="date-fin">Date de retour</label>
+                        <input type="date" id="date-fin" onchange="calculerPrix()">
+                    </div>
+                    <div>
+                        <label for="heure-retour">Heure de retour</label>
+                        <select id="heure-retour" onchange="calculerPrix()">
+                            <option value="07:00">7h</option>
+                            <option value="19:00">19h</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="calendrier-dispo" style="margin-top: 20px;"></div>
+                <hr style="margin: 25px 0;">
+                
+                <h4>Options supplémentaires</h4>
+                <div class="options-grid">
+                    <input type="checkbox" id="opt-livraison" class="hidden-input" onchange="calculerPrix()">
+                    <label for="opt-livraison" class="btn-option">Livraison (+15 000 Ar)</label>
+                    
+                    <input type="checkbox" id="opt-recuperation" class="hidden-input" onchange="calculerPrix()">
+                    <label for="opt-recuperation" class="btn-option">Récupération (+15 000 Ar)</label>
+
+                    <div id="option-chauffeur-container" style="display:none;">
+                        <input type="checkbox" id="opt-chauffeur" class="hidden-input" onchange="calculerPrix()">
+                        <label for="opt-chauffeur" class="btn-option" id="label-opt-chauffeur">Ajouter un chauffeur</label>
+                    </div>
+                </div>
+                <hr style="margin: 25px 0;">
+
+                <h4>Informations du locataire</h4>
+                <div class="grid-form">
+                    <input type="text" id="loueur-nom" placeholder="Nom complet">
+                    <input type="tel" id="loueur-tel" placeholder="Téléphone">
+                    <input type="text" id="loueur-adresse" placeholder="Adresse">
+                    <input type="text" id="loueur-cin" placeholder="N° CIN ou Permis">
+                </div>
+                <hr style="margin: 25px 0;">
+
+                <h4>Récapitulatif</h4>
+                <div class="recap-prix">
+                    <p>Prix total estimé : <strong id="prix-total">0</strong> Ar</p>
+                    <p>Acompte (50%) : <strong id="prix-acompte">0</strong> Ar</p>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <input type="checkbox" id="check-conditions-step1">
+                    <label for="check-conditions-step1">J'ai lu et j'accepte les conditions générales de location.</label>
+                </div>
+
+                <button class="btn-hero" style="width:100%; margin-top:20px;" onclick="lancerReservationWhatsApp()">
+                    Pré-réserver via WhatsApp
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <h3 id="footer-title"></h3>
+        <p id="footer-address"></p>
+        <p>
+            <span id="footer-phone"></span><br>
+            NIF: <span id="footer-nif"></span> | STAT: <span id="footer-stat"></span>
+        </p>
+        <div id="footer-socials" style="margin-top: 20px;"></div>
+    </footer>
+
+    <!-- Modale pour choisir une voiture spécifique -->
+    <div id="modal-choix-specifique" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('modal-choix-specifique')">&times;</span>
+            <h3 id="modal-choix-titre">Choisir un véhicule</h3>
+            <div id="modal-choix-body"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.js"></script>
+    <script src="common.js"></script>
+    <script src="script-voitures.js"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "header": {
+    "siteName": "Location Tana",
+    "logoUrl": "https://i.ibb.co/dw8gxWXL/1765001359376.png"
+  },
+  "contact": {
+    "phoneDisplay": "+261 34 91 207 26",
+    "phoneCall": "+261349120726",
+    "whatsapp": "+261325264535"
+  },
+  "footer": {
+    "address": "Siae 33 Ambodifilao, Analakely, Antananarivo 101",
+    "nif": "5012357932",
+    "stat": "70209 11 2025 0 06328",
+    "socials": {
+      "facebook": "https://www.facebook.com/share/1HBzQMGGN7/",
+      "tiktok": "#",
+      "instagram": "#"
+    }
+  },
+  "features": [
+    { "emoji": "👨‍👩‍👧‍👦", "title": "Famille", "text": "Des véhicules spacieux pour le confort de toute votre famille." },
+    { "emoji": "💼", "title": "Affaires", "text": "Berlines élégantes et discrètes pour vos rendez-vous professionnels." },
+    { "emoji": "🌴", "title": "Évasion", "text": "4x4 robustes prêts à affronter toutes les routes de Madagascar." },
+    { "emoji": "↔️", "title": "Flexibilité", "text": "Horaires adaptés, options modulables et service sur mesure." }
+  ],
+  "cout_livraison": 15000,
+  "cout_recuperation": 15000
+}
