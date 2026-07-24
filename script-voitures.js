@@ -1,226 +1,197 @@
-let voituresCache = [];
-let calendar = null;
-let voitureSelectionnee = null;
+let allVoitures = [];
+let maintenancesList = [];
+let reservationsList = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        await loadSiteConfig();
-        await chargerVoitures();
-    } catch (e) {
-        console.error("Erreur d'initialisation:", e);
-    }
+    await Promise.all([loadVoituresPublic(), loadMaintenancesAndReservations()]);
 });
 
-async function chargerVoitures() {
-    const container = document.getElementById('container-voitures');
-    container.innerHTML = '<p>Chargement du catalogue...</p>';
-
+async function loadVoituresPublic() {
     const { data, error } = await sb.from('voitures').select('*').eq('est_public', true);
     if (error) {
-        container.innerHTML = `<p>Erreur: ${error.message}</p>`;
+        document.getElementById('grid-voitures-public').innerHTML = '<p>Erreur de chargement des voitures.</p>';
         return;
     }
-    voituresCache = data || [];
-    renderModeles(voituresCache);
+    allVoitures = data || [];
+    renderVoitures(allVoitures);
 }
 
-function renderModeles(voitures) {
-    const container = document.getElementById('container-voitures');
-    const modeles = voitures.reduce((acc, voiture) => {
-        const modeleKey = `${voiture.marque} ${voiture.modele}`;
-        if (!acc[modeleKey]) {
-            acc[modeleKey] = {
-                voitures: [],
-                prixMin: Infinity,
-                image: voiture.image_url,
-                description: voiture.description
-            };
-        }
-        acc[modeleKey].voitures.push(voiture);
-        const prix = voiture.prix_12h_sans_chauffeur || voiture.prix_12h_avec_chauffeur || Infinity;
-        if (prix < acc[modeleKey].prixMin) {
-            acc[modeleKey].prixMin = prix;
-        }
-        return acc;
-    }, {});
+async function loadMaintenancesAndReservations() {
+    const [mResp, rResp] = await Promise.all([
+        sb.from('maintenances').select('*'),
+        sb.from('reservations').select('*').neq('statut', 'annulee')
+    ]);
+    maintenancesList = mResp.data || [];
+    reservationsList = rResp.data || [];
+}
 
-    if (Object.keys(modeles).length === 0) {
-        container.innerHTML = '<p>Aucun véhicule disponible.</p>';
+function renderVoitures(voitures) {
+    const grid = document.getElementById('grid-voitures-public');
+    if (!voitures.length) {
+        grid.innerHTML = '<p>Aucun véhicule ne correspond à vos critères.</p>';
         return;
     }
 
-    container.innerHTML = Object.entries(modeles).map(([nomModele, data]) => `
-        <article class="carte-voiture">
-            <img src="${data.image || 'https://placehold.co/800x500'}" alt="${nomModele}">
-            <div class="carte-body">
-                <h3>${nomModele}</h3>
-                <p class="carte-desc">${data.description || ''}</p>
-                <p class="prix">À partir de ${formatPrix(data.prixMin)} Ar <small>/ 12h</small></p>
-                <button class="btn-hero" onclick="afficherChoixSpecifiques('${nomModele.replace(/'/g, "\\'")}')">Choisir ce modèle</button>
+    grid.innerHTML = voitures.map(v => `
+        <div class="car-card-pub">
+            <img src="${v.image_url || 'placeholder.jpg'}" alt="${v.marque} ${v.modele}" class="car-img">
+            <div class="car-info">
+                <h3>${v.marque} ${v.modele}</h3>
+                <div class="car-tags">
+                    <span><i class="fas fa-users"></i> ${v.places} places</span>
+                    <span><i class="fas fa-cog"></i> ${v.transmission}</span>
+                    <span><i class="fas fa-gas-pump"></i> ${v.carburant}</span>
+                </div>
+                <p class="car-price"><strong>${formatPrix(v.prix_24h_sans_chauffeur || v.prix_24h_avec_chauffeur || 0)} Ar</strong> / jour</p>
+                <button class="btn-primary btn-full" onclick="openReservationModal(${v.id})">Réserver</button>
             </div>
-        </article>
+        </div>
     `).join('');
 }
 
-function afficherChoixSpecifiques(modeleKey) {
-    const voituresDuModele = voituresCache.filter(v => `${v.marque} ${v.modele}` === modeleKey);
-    const modalBody = document.getElementById('modal-choix-body');
-    setText('modal-choix-titre', `Choisir un ${modeleKey}`);
+function filtrerVoitures() {
+    const places = document.getElementById('filter-places').value;
+    const chauffeur = document.getElementById('filter-chauffeur').value;
+    const transmission = document.getElementById('filter-transmission').value;
+    const carburant = document.getElementById('filter-carburant').value;
 
-    modalBody.innerHTML = voituresDuModele.map(v => {
-        let prixHtml = '';
-        switch (v.modele_chauffeur) {
-            case 'mixte':
-                prixHtml = `
-                    <button onclick="ouvrirReservation(${v.id}, 'sans')">Sans Chauffeur: ${formatPrix(v.prix_12h_sans_chauffeur)} Ar</button>
-                    <button onclick="ouvrirReservation(${v.id}, 'avec')">Avec Chauffeur: ${formatPrix(v.prix_12h_avec_chauffeur)} Ar</button>`;
-                break;
-            case 'sans_chauffeur_special':
-                prixHtml = `<button onclick="ouvrirReservation(${v.id}, 'sans')">Sans Chauffeur: ${formatPrix(v.prix_12h_sans_chauffeur)} Ar</button>`;
-                break;
-            case 'avec_chauffeur_inclus':
-                prixHtml = `<button onclick="ouvrirReservation(${v.id}, 'avec')">Avec Chauffeur: ${formatPrix(v.prix_12h_avec_chauffeur)} Ar</button>`;
-                break;
-        }
-        return `
-            <div class="choix-specifique-item">
-                <h4>${v.marque} ${v.modele} (${v.immatriculation})</h4>
-                <div class="choix-actions">${prixHtml}</div>
-            </div>
-        `;
-    }).join('');
-
-    toggleModal('modal-choix-specifique', true);
-}
-
-function ouvrirReservation(voitureId, typeChauffeur) {
-    voitureSelectionnee = voituresCache.find(v => v.id === voitureId);
-    if (!voitureSelectionnee) return;
-
-    voitureSelectionnee.choix_chauffeur = typeChauffeur;
-    closeModal('modal-choix-specifique');
-
-    setText('nom-voiture-selectionnee', `${voitureSelectionnee.marque} ${voitureSelectionnee.modele}`);
-    document.getElementById('reservation-section').style.display = 'block';
-    document.getElementById('reservation-section').scrollIntoView({ behavior: 'smooth' });
-
-    const optChauffeurContainer = document.getElementById('option-chauffeur-container');
-    if (voitureSelectionnee.modele_chauffeur === 'sans_chauffeur_special') {
-        optChauffeurContainer.style.display = 'block';
-        setText('label-opt-chauffeur', `Ajouter un chauffeur (+${formatPrix(voitureSelectionnee.prix_option_chauffeur)} Ar/j)`);
-    } else {
-        optChauffeurContainer.style.display = 'none';
-    }
-
-    initCalendar(voitureId);
-    calculerPrix();
-}
-
-async function initCalendar(voitureId) {
-    if (calendar) calendar.destroy();
-    const { data: resas } = await sb.from('reservations').select('date_debut, date_fin, statut').eq('id_voiture', voitureId).neq('statut', 'annulee');
-    
-    const events = (resas || []).map(r => {
-        let color = '#cccccc'; // en_attente
-        if (r.statut === 'acompte_paye') color = '#f39c12'; // orange
-        if (r.statut === 'valide') color = '#e74c3c'; // rouge
-        return { start: r.date_debut, end: r.date_fin, display: 'background', color };
+    const res = allVoitures.filter(v => {
+        if (places && v.places < parseInt(places)) return false;
+        if (chauffeur && v.modele_chauffeur !== chauffeur) return false;
+        if (transmission && v.transmission !== transmission) return false;
+        if (carburant && v.carburant !== carburant) return false;
+        return true;
     });
 
-    const calendarEl = document.getElementById('calendrier-dispo');
-    calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        locale: 'fr',
-        events,
-        dateClick: (info) => {
-            const dDebut = document.getElementById('date-debut');
-            const dFin = document.getElementById('date-fin');
-            if (!dDebut.value || (dDebut.value && dFin.value)) {
-                dDebut.value = info.dateStr;
-                dFin.value = '';
-            } else {
-                if (new Date(info.dateStr) < new Date(dDebut.value)) dDebut.value = info.dateStr;
-                else dFin.value = info.dateStr;
-            }
-            calculerPrix();
-        }
+    renderVoitures(res);
+}
+
+function openReservationModal(carId) {
+    const car = allVoitures.find(v => v.id === carId);
+    if (!car) return;
+
+    document.getElementById('form-reservation').reset();
+    document.getElementById('resa-car-id').value = car.id;
+    document.getElementById('resa-prix-24h').value = car.prix_24h_sans_chauffeur || car.prix_24h_avec_chauffeur || 0;
+    document.getElementById('modal-car-title').textContent = `Réserver : ${car.marque} ${car.modele}`;
+    
+    // Initialiser les dates par défaut (demain)
+    const today = new Date();
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    const afterTomorrow = new Date(today); afterTomorrow.setDate(today.getDate() + 2);
+
+    document.getElementById('resa-date-debut').value = tomorrow.toISOString().split('T')[0];
+    document.getElementById('resa-date-fin').value = afterTomorrow.toISOString().split('T')[0];
+
+    toggleModePaiement();
+    calculerEtVerifierDates();
+    toggleModal('modal-reservation', true);
+}
+
+function toggleModePaiement() {
+    const isAcompte = document.querySelector('input[name="type_reservation"]:checked').value === 'acompte';
+    const sectionPaiement = document.getElementById('section-paiement-acompte');
+    sectionPaiement.style.display = isAcompte ? 'block' : 'none';
+    document.getElementById('resa-montant-acompte').required = isAcompte;
+    document.getElementById('resa-ref-mvola').required = isAcompte;
+    calculerEtVerifierDates();
+}
+
+function calculerEtVerifierDates() {
+    const carId = parseInt(document.getElementById('resa-car-id').value);
+    const dateDebut = document.getElementById('resa-date-debut').value;
+    const heureDebut = document.getElementById('resa-heure-debut').value;
+    const dateFin = document.getElementById('resa-date-fin').value;
+    const heureFin = document.getElementById('resa-heure-fin').value;
+    const prixJour = parseInt(document.getElementById('resa-prix-24h').value);
+    const isAcompte = document.querySelector('input[name="type_reservation"]:checked').value === 'acompte';
+
+    const alertContainer = document.getElementById('alert-dates-container');
+    const btnSubmit = document.getElementById('btn-submit-resa');
+    alertContainer.innerHTML = '';
+    btnSubmit.disabled = false;
+
+    if (!dateDebut || !dateFin) return;
+
+    // 1. Vérification Maintenance
+    const enMaintenance = maintenancesList.some(m => m.id_voiture === carId && m.date_prevue >= dateDebut && m.date_prevue <= dateFin);
+    if (enMaintenance) {
+        alertContainer.innerHTML = `<div class="alert-danger">⚠️ Ce véhicule est en <strong>maintenance</strong> sur cette période. Veuillez choisir d'autres dates.</div>`;
+        btnSubmit.disabled = true;
+        return;
+    }
+
+    // 2. Vérification Chevauchement Réservation
+    const chevauchement = reservationsList.some(r => r.id_voiture === carId && !(dateFin < r.date_debut || dateDebut > r.date_fin));
+    if (chevauchement) {
+        const autresDispos = allVoitures.filter(v => v.id !== carId && !reservationsList.some(r => r.id_voiture === v.id && !(dateFin < r.date_debut || dateDebut > r.date_fin)));
+        let suggestionHtml = autresDispos.length ? `<br><strong>Autres véhicules disponibles à ces dates :</strong> ` + autresDispos.map(v => `${v.marque} ${v.modele}`).join(', ') : '';
+        
+        alertContainer.innerHTML = `<div class="alert-warning">⚠️ Ce véhicule est déjà réservé pour ces dates.${suggestionHtml}</div>`;
+        btnSubmit.disabled = true;
+        return;
+    }
+
+    // 3. Récapitulatif
+    afficherRecapitulatif('recapitulatif-box', {
+        dateDebut, heureDebut, dateFin, heureFin, prixJour, estAcomptePaye: isAcompte
     });
-    calendar.render();
 }
 
-function calculerPrix() {
-    if (!voitureSelectionnee) return;
+async function soumettreReservation(event) {
+    event.preventDefault();
+    const btn = document.getElementById('btn-submit-resa');
+    btn.disabled = true;
+    btn.textContent = "Traitement en cours...";
 
-    const d1 = new Date(document.getElementById('date-debut').value + 'T' + document.getElementById('heure-depart').value);
-    const d2 = new Date(document.getElementById('date-fin').value + 'T' + document.getElementById('heure-retour').value);
+    const carId = parseInt(document.getElementById('resa-car-id').value);
+    const dateDebut = document.getElementById('resa-date-debut').value;
+    const dateFin = document.getElementById('resa-date-fin').value;
+    const typeResa = document.querySelector('input[name="type_reservation"]:checked').value;
+    const isAcompte = typeResa === 'acompte';
 
-    if (isNaN(d1) || isNaN(d2) || d2 <= d1) {
-        setText('prix-total', '0');
-        setText('prix-acompte', '0');
-        return;
-    }
+    const prixJour = parseInt(document.getElementById('resa-prix-24h').value);
+    const nbJours = calculerDuree(`${dateDebut}T08:00`, `${dateFin}T18:00`);
+    const total = nbJours * prixJour;
+    const acompte = isAcompte ? parseInt(document.getElementById('resa-montant-acompte').value) : 0;
 
-    const dureeMs = d2 - d1;
-    const dureeHeures = dureeMs / (1000 * 60 * 60);
-    const nbJours = Math.ceil(dureeHeures / 24);
+    const tel = document.getElementById('resa-tel').value.trim();
+    const nom = document.getElementById('resa-nom').value.trim();
 
-    let prixBase = 0;
-    let choixChauffeur = voitureSelectionnee.choix_chauffeur;
-    if (voitureSelectionnee.modele_chauffeur === 'sans_chauffeur_special' && document.getElementById('opt-chauffeur').checked) {
-        choixChauffeur = 'avec';
-    }
+    // 1. Sauvegarde/Mise à jour du Client
+    await sb.from('clients').upsert([{
+        nom: nom,
+        email: document.getElementById('resa-email').value.trim(),
+        tel: tel,
+        whatsapp: document.getElementById('resa-whatsapp').value.trim(),
+        cin_passeport: document.getElementById('resa-cin').value.trim(),
+        cin_date: document.getElementById('resa-cin-date').value,
+        permis: document.getElementById('resa-permis').value.trim(),
+        permis_date: document.getElementById('resa-permis-date').value
+    }], { onConflict: 'tel' });
 
-    if (nbJours > 2) {
-        const prix12h = (choixChauffeur === 'avec') ? voitureSelectionnee.prix_12h_avec_chauffeur : voitureSelectionnee.prix_12h_sans_chauffeur;
-        prixBase = prix12h * nbJours;
-    } else if (dureeHeures <= 12) {
-        prixBase = (choixChauffeur === 'avec') ? voitureSelectionnee.prix_12h_avec_chauffeur : voitureSelectionnee.prix_12h_sans_chauffeur;
+    // 2. Création de la réservation
+    const { error } = await sb.from('reservations').insert([{
+        id_voiture: carId,
+        nom: nom,
+        tel: tel,
+        date_debut: dateDebut,
+        date_fin: dateFin,
+        montant_total: total,
+        paiement_montant_declare: acompte,
+        ref_mvola: isAcompte ? document.getElementById('resa-ref-mvola').value.trim() : null,
+        statut: isAcompte ? 'acompte_paye' : 'en_attente'
+    }]);
+
+    if (error) {
+        alert("Erreur lors de la réservation : " + error.message);
+        btn.disabled = false;
+        btn.textContent = "Confirmer la réservation";
     } else {
-        prixBase = (choixChauffeur === 'avec') ? voitureSelectionnee.prix_24h_avec_chauffeur : voitureSelectionnee.prix_24h_sans_chauffeur;
+        alert(isAcompte 
+            ? "Réservation enregistrée ! Votre facture et votre contrat de location vous seront envoyés par Email et WhatsApp." 
+            : "Pré-réservation enregistrée ! N'oubliez pas de régler l'acompte pour garantir la disponibilité.");
+        closeModal('modal-reservation');
+        await loadMaintenancesAndReservations();
     }
-    
-    if (voitureSelectionnee.modele_chauffeur === 'sans_chauffeur_special' && document.getElementById('opt-chauffeur').checked) {
-        prixBase += (voitureSelectionnee.prix_option_chauffeur || 0) * nbJours;
-    }
-
-    let total = prixBase;
-    if (document.getElementById('opt-livraison').checked) total += siteConfig?.cout_livraison || 15000;
-    if (document.getElementById('opt-recuperation').checked) total += siteConfig?.cout_recuperation || 15000;
-
-    setText('prix-total', formatPrix(total));
-    setText('prix-acompte', formatPrix(Math.round(total / 2)));
-}
-
-async function lancerReservationWhatsApp() {
-    if (!document.getElementById('check-conditions-step1').checked) {
-        alert("Veuillez accepter les conditions générales.");
-        return;
-    }
-
-    const payload = {
-        id_voiture: voitureSelectionnee.id,
-        date_debut: document.getElementById('date-debut').value,
-        date_fin: document.getElementById('date-fin').value,
-        nom: document.getElementById('loueur-nom').value.trim(),
-        tel: document.getElementById('loueur-tel').value.trim(),
-        adresse: document.getElementById('loueur-adresse').value.trim(),
-        cin_passeport: document.getElementById('loueur-cin').value.trim(),
-        montant_total: parseInt(document.getElementById('prix-total').innerText.replace(/\s/g, '')),
-        statut: 'en_attente'
-    };
-
-    if (!payload.nom || !payload.tel || !payload.date_debut || !payload.date_fin) {
-        alert("Veuillez remplir toutes les informations.");
-        return;
-    }
-
-    const waNumber = siteConfig?.contact?.whatsapp?.replace(/\D/g, '');
-    const message = `Bonjour, je souhaite pré-réserver :\n- Voiture: ${voitureSelectionnee.marque} ${voitureSelectionnee.modele}\n- Du: ${payload.date_debut} au ${payload.date_fin}\n- Client: ${payload.nom}\n- Montant total: ${formatPrix(payload.montant_total)} Ar`;
-    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, '_blank');
-
-    await sb.from('clients').upsert({ nom: payload.nom, tel: payload.tel, adresse: payload.adresse, cin_passeport: payload.cin_passeport }, { onConflict: 'tel' });
-    await sb.from('reservations').insert([payload]);
-    
-    alert("Votre demande de pré-réservation a été envoyée. Nous vous contacterons sous peu.");
-    document.getElementById('reservation-section').style.display = 'none';
 }
