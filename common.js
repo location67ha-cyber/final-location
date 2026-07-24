@@ -5,9 +5,9 @@
 const SUPABASE_URL = 'https://xxlehrxxrcuismlcnwhh.supabase.co';
 
 // ⚠️ REMPLACEZ CETTE CLÉ PAR VOTRE VRAIE CLÉ "anon public" TROUVÉE DANS SUPABASE
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4bGVocnh4cmN1aXNtbGNud2hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NDk2MjYsImV4cCI6MjEwMDIyNTYyNn0.148ZtlXhbfSlPJmZ6j2IzVDyGL8wXvhAxfoyxXhmCdw';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4bGVocnh4cmN1aXNtbGNud2hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NDk2MjYsImV4cCI6MjEwMDIyNTYyNn0.148ZtlXhbf[...]
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Initialisation globale au chargement de la page
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,23 +15,23 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFooterInfos();
 });
 
-// 1. Chargement dynamique des Engagements
+// 1. Chargement dynamique des Engagements depuis site_config.json
 async function loadEngagements() {
     const container = document.getElementById('engagements-container');
     if (!container) return;
 
     try {
-        const response = await fetch('conditions.json');
-        if (!response.ok) throw new Error("Impossible de charger conditions.json");
+        const response = await fetch('site_config.json');
+        if (!response.ok) throw new Error("Impossible de charger site_config.json");
         
         const data = await response.json();
-        const engagements = data.engagements || [];
+        const features = data.features || [];
 
-        container.innerHTML = engagements.map(item => `
+        container.innerHTML = features.map(item => `
             <div class="engagement-card">
-                <i class="${item.icon || 'fas fa-check-circle'}"></i>
-                <h4>${item.titre}</h4>
-                <p>${item.description}</p>
+                <span class="feature-emoji">${item.emoji || '✓'}</span>
+                <h4>${item.title || item.titre}</h4>
+                <p>${item.text || item.description}</p>
             </div>
         `).join('');
     } catch (err) {
@@ -81,6 +81,16 @@ async function openConditionsModal() {
 }
 
 // 3. Utilitaires & Calculs
+function setText(elementId, text) {
+    const el = document.getElementById(elementId);
+    if (el) el.textContent = text;
+}
+
+function setAttr(elementId, attrName, attrValue) {
+    const el = document.getElementById(elementId);
+    if (el) el.setAttribute(attrName, attrValue);
+}
+
 function formatPrix(montant) {
     return new Intl.NumberFormat('fr-FR').format(montant);
 }
