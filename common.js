@@ -9,119 +9,151 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let siteConfig = null;
+let conditionsData = null;
 
-/**
- * Vérifie si un utilisateur est connecté et gère les rôles.
- */
-async function checkAuth() {
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) {
-        window.location.href = 'login.html';
-        return null;
-    }
-    const user = session.user;
-    
-    // Détermination du rôle (Défaut sur 'admin' si non spécifié)
-    const role = (user.user_metadata?.role || 'admin').toUpperCase();
-
-    if (document.getElementById('user-email')) {
-        document.getElementById('user-email').textContent = user.email;
-    }
-    if (document.getElementById('user-role')) {
-        document.getElementById('user-role').textContent = role;
-    }
-    if (document.getElementById('btn-logout')) {
-        document.getElementById('btn-logout').addEventListener('click', async () => {
-            await sb.auth.signOut();
-            window.location.href = 'login.html';
-        });
-    }
-
-    // Charger la configuration globale du site
-    await loadSiteConfig();
-
-    return user;
-}
-
-/**
- * Charge la configuration depuis site_config.json
- */
+// Chargement de site_config.json
 async function loadSiteConfig() {
     if (siteConfig) return siteConfig;
     try {
         const resp = await fetch('site_config.json');
-        if (!resp.ok) throw new Error('Fichier site_config.json introuvable.');
+        if (!resp.ok) throw new Error('Erreur site_config.json');
         siteConfig = await resp.json();
         return siteConfig;
-    } catch (error) {
-        console.error("Erreur de chargement de site_config.json:", error);
+    } catch (e) {
+        console.error(e);
         return null;
     }
 }
 
-/**
- * Injecte automatiquement les données (NIF, STAT, Logo) dans le HTML
- */
+// Chargement de conditions.json
+async function loadConditions() {
+    if (conditionsData) return conditionsData;
+    try {
+        const resp = await fetch('conditions.json');
+        if (!resp.ok) throw new Error('Erreur conditions.json');
+        conditionsData = await resp.json();
+        return conditionsData;
+    } catch (e) {
+        console.error(e);
+        return null;
+    }
+}
+
+// Affichage dynamique (NIF, STAT, Réseaux sociaux, Engagements)
 async function renderSiteConfig() {
     const config = await loadSiteConfig();
     if (!config) return;
 
-    // Injection NIF et STAT dans le footer
-    const footerInfo = document.querySelector('footer p') || document.getElementById('footer-nif-stat');
+    // NIF / STAT
+    const footerInfo = document.getElementById('footer-nif-stat') || document.querySelector('footer p');
     if (footerInfo && config.footer) {
-        footerInfo.textContent = `NIF: ${config.footer.nif} | STAT: ${config.footer.stat}`;
+        footerInfo.textContent = `NIF: ${config.footer.nif || ''} | STAT: ${config.footer.stat || ''}`;
     }
 
-    // Injection du logo si l'élément existe
-    const logoImg = document.getElementById('site-logo');
-    if (logoImg && config.header?.logoUrl) {
-        logoImg.src = config.header.logoUrl;
+    // Réseaux sociaux (Facebook & TikTok)
+    if (config.footer?.socials) {
+        const fbBtn = document.getElementById('link-facebook');
+        const ttBtn = document.getElementById('link-tiktok');
+        
+        if (fbBtn && config.footer.socials.facebook) {
+            fbBtn.href = config.footer.socials.facebook;
+            fbBtn.style.display = 'inline-block';
+        }
+        if (ttBtn && config.footer.socials.tiktok) {
+            ttBtn.href = config.footer.socials.tiktok;
+            ttBtn.style.display = 'inline-block';
+        }
     }
 
-    // Injection du téléphone
-    const phoneElem = document.getElementById('contact-phone');
-    if (phoneElem && config.contact) {
-        phoneElem.textContent = config.contact.phoneDisplay;
-        phoneElem.href = `tel:${config.contact.phoneCall}`;
-    }
-}
-
-/**
- * Formate un nombre en devise Ariary.
- */
-function formatPrix(value) {
-    const num = Number(value);
-    if (isNaN(num)) return '0';
-    return num.toLocaleString('fr-FR');
-}
-
-/**
- * Gestion des Modales (Afficher / Masquer)
- */
-function toggleModal(modalId, show) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = show ? 'flex' : 'none';
+    // Engagements (Nos Engagements)
+    const engContainer = document.getElementById('engagements-container');
+    if (engContainer && config.features) {
+        engContainer.innerHTML = config.features.map(f => `
+            <div class="feature-card">
+                <span class="emoji">${f.emoji}</span>
+                <h3>${f.title}</h3>
+                <p>${f.text}</p>
+            </div>
+        `).join('');
     }
 }
 
-function closeModal(modalId) {
-    toggleModal(modalId, false);
+// Modal pour afficher les conditions de location
+async function openConditionsModal() {
+    const data = await loadConditions();
+    if (!data) return;
+
+    let modal = document.getElementById('modal-conditions');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-conditions';
+        modal.className = 'modal-overlay';
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeConditionsModal()">&times;</span>
+            <h2>${data.titre}</h2>
+            <div class="conditions-body">
+                ${data.regles.map(r => `
+                    <div class="condition-item">
+                        <h4>${r.titre}</h4>
+                        <p>${r.texte}</p>
+                    </div>
+                `).join('')}
+            </div>
+            <button class="btn-primary" onclick="closeConditionsModal()">J'ai compris</button>
+        </div>
+    `;
+    modal.style.display = 'flex';
 }
 
-function setText(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text ?? '';
+function closeConditionsModal() {
+    const modal = document.getElementById('modal-conditions');
+    if (modal) modal.style.display = 'none';
 }
 
-function setAttr(id, attr, value) {
-    const el = document.getElementById(id);
-    if (el) el.setAttribute(attr, value ?? '');
+// Calcul de la durée en jours
+function calculerDuree(dateDebut, dateFin) {
+    const start = new Date(dateDebut);
+    const end = new Date(dateFin);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 1;
 }
 
-function toggleMenu() {
-    document.getElementById('nav-menu')?.classList.toggle('active');
+// Générateur de Récapitulatif
+function afficherRecapitulatif(containerId, params) {
+    const { dateDebut, heureDebut, dateFin, heureFin, prixJour, estAcomptePaye } = params;
+    
+    const nbJours = calculerDuree(`${dateDebut}T${heureDebut}`, `${dateFin}T${heureFin}`);
+    const prixTotal = nbJours * prixJour;
+
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="recap-card">
+            <h3>📋 Récapitulatif de votre location</h3>
+            <div class="recap-grid">
+                <p><strong>Début :</strong> ${dateDebut} à ${heureDebut}</p>
+                <p><strong>Fin :</strong> ${dateFin} à ${heureFin}</p>
+                <p><strong>Durée :</strong> ${nbJours} jour(s)</p>
+                <p class="prix-total"><strong>Prix Total :</strong> ${prixTotal.toLocaleString('fr-FR')} Ar</p>
+            </div>
+            
+            ${estAcomptePaye ? `
+                <div class="alert-success">
+                    ✅ <strong>Acompte reçu :</strong> Votre facture et votre contrat de location vous seront envoyés par <strong>Email</strong> et <strong>WhatsApp</strong> après validation.
+                </div>
+            ` : `
+                <div class="alert-warning">
+                    ⚠️ <strong>Pré-réservation :</strong> La voiture reste disponible à la location tant que l'acompte n'est pas réglé.
+                </div>
+            `}
+        </div>
+    `;
 }
 
-// Exécuter l'injection automatique au chargement de la page
 document.addEventListener('DOMContentLoaded', renderSiteConfig);
