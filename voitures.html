@@ -3,128 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catalogue · Location Tana</title>
+    <title>Nos Véhicules - Location</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
-    <link rel="stylesheet" href="style-ui.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header class="navbar">
-        <a href="index.html" class="logo-container">
-            <img id="header-logo" src="" alt="Logo" class="nav-logo">
-            <span id="header-site-name"></span>
-        </a>
-        <button class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
-        <ul class="nav-links" id="nav-menu">
-            <li><a href="index.html">Accueil</a></li>
-            <li><a href="voitures.html" class="active">Nos voitures</a></li>
-            <li><a href="login.html" class="btn-action btn-sec">Portail admin</a></li>
-        </ul>
+
+    <!-- Header -->
+    <header class="main-header">
+        <div class="logo-container">
+            <img id="site-logo" src="logo.png" alt="Logo">
+        </div>
+        <nav class="main-nav">
+            <a href="index.html">Accueil</a>
+            <a href="voitures.html" class="active">Véhicules</a>
+            <a href="login.html">Espace Admin</a>
+        </nav>
     </header>
 
-    <main>
-        <section class="page-section">
-            <h1 class="section-title" style="color:white;">Notre Flotte</h1>
-            <div id="container-voitures" class="grid-voitures">
-                <!-- Les cartes des modèles de voitures seront chargées ici -->
+    <main class="container">
+        <h2>Nos Véhicules Disponibles</h2>
+
+        <!-- Engagements -->
+        <section id="engagements-container" class="engagements-grid"></section>
+
+        <!-- Conditions de location (Aperçu) -->
+        <div class="conditions-banner">
+            <p>💡 Prenez connaissance de nos <a href="#" onclick="openConditionsModal(); return false;">Conditions Générales de Location</a> avant de réserver.</p>
+        </div>
+
+        <!-- Barre de Filtres -->
+        <section class="filters-card">
+            <h3><i class="fas fa-filter"></i> Filtrer la recherche</h3>
+            <div class="filters-grid">
+                <div>
+                    <label>Nombre de places</label>
+                    <select id="filter-places" onchange="filtrerVoitures()">
+                        <option value="">Toutes</option>
+                        <option value="2">2 places</option>
+                        <option value="5">5 places</option>
+                        <option value="7">7 places et +</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Chauffeur</label>
+                    <select id="filter-chauffeur" onchange="filtrerVoitures()">
+                        <option value="">Tous</option>
+                        <option value="avec_chauffeur_inclus">Avec chauffeur inclus</option>
+                        <option value="sans_chauffeur_special">Sans chauffeur</option>
+                        <option value="mixte">Mixte</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Transmission</label>
+                    <select id="filter-transmission" onchange="filtrerVoitures()">
+                        <option value="">Toutes</option>
+                        <option value="Manuelle">Manuelle</option>
+                        <option value="Automatique">Automatique</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Carburant</label>
+                    <select id="filter-carburant" onchange="filtrerVoitures()">
+                        <option value="">Tous</option>
+                        <option value="Essence">Essence</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="Hybride">Hybride</option>
+                    </select>
+                </div>
             </div>
         </section>
 
-        <section id="reservation-section" class="page-section" style="display: none;">
-            <h2 class="section-title" style="color:white;">Réservation pour <span id="nom-voiture-selectionnee"></span></h2>
-            <div class="container-form">
-                <div class="grid-form">
-                    <div>
-                        <label for="date-debut">Date de départ</label>
-                        <input type="date" id="date-debut" onchange="calculerPrix()">
-                    </div>
-                    <div>
-                        <label for="heure-depart">Heure de départ</label>
-                        <select id="heure-depart" onchange="calculerPrix()">
-                            <option value="07:00">7h</option>
-                            <option value="19:00">19h</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="date-fin">Date de retour</label>
-                        <input type="date" id="date-fin" onchange="calculerPrix()">
-                    </div>
-                    <div>
-                        <label for="heure-retour">Heure de retour</label>
-                        <select id="heure-retour" onchange="calculerPrix()">
-                            <option value="07:00">7h</option>
-                            <option value="19:00">19h</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="calendrier-dispo" style="margin-top: 20px;"></div>
-                <hr style="margin: 25px 0;">
-                
-                <h4>Options supplémentaires</h4>
-                <div class="options-grid">
-                    <input type="checkbox" id="opt-livraison" class="hidden-input" onchange="calculerPrix()">
-                    <label for="opt-livraison" class="btn-option">Livraison (+15 000 Ar)</label>
-                    
-                    <input type="checkbox" id="opt-recuperation" class="hidden-input" onchange="calculerPrix()">
-                    <label for="opt-recuperation" class="btn-option">Récupération (+15 000 Ar)</label>
-
-                    <div id="option-chauffeur-container" style="display:none;">
-                        <input type="checkbox" id="opt-chauffeur" class="hidden-input" onchange="calculerPrix()">
-                        <label for="opt-chauffeur" class="btn-option" id="label-opt-chauffeur">Ajouter un chauffeur</label>
-                    </div>
-                </div>
-                <hr style="margin: 25px 0;">
-
-                <h4>Informations du locataire</h4>
-                <div class="grid-form">
-                    <input type="text" id="loueur-nom" placeholder="Nom complet">
-                    <input type="tel" id="loueur-tel" placeholder="Téléphone">
-                    <input type="text" id="loueur-adresse" placeholder="Adresse">
-                    <input type="text" id="loueur-cin" placeholder="N° CIN ou Permis">
-                </div>
-                <hr style="margin: 25px 0;">
-
-                <h4>Récapitulatif</h4>
-                <div class="recap-prix">
-                    <p>Prix total estimé : <strong id="prix-total">0</strong> Ar</p>
-                    <p>Acompte (50%) : <strong id="prix-acompte">0</strong> Ar</p>
-                </div>
-
-                <div style="margin-top: 20px;">
-                    <input type="checkbox" id="check-conditions-step1">
-                    <label for="check-conditions-step1">J'ai lu et j'accepte les conditions générales de location.</label>
-                </div>
-
-                <button class="btn-hero" style="width:100%; margin-top:20px;" onclick="lancerReservationWhatsApp()">
-                    Pré-réserver via WhatsApp
-                </button>
-            </div>
-        </section>
+        <!-- Grille des voitures -->
+        <div id="grid-voitures-public" class="car-grid">
+            Chargement des véhicules...
+        </div>
     </main>
 
-    <footer class="site-footer">
-        <h3 id="footer-title"></h3>
-        <p id="footer-address"></p>
-        <p>
-            <span id="footer-phone"></span><br>
-            NIF: <span id="footer-nif"></span> | STAT: <span id="footer-stat"></span>
-        </p>
-        <div id="footer-socials" style="margin-top: 20px;"></div>
-    </footer>
+    <!-- Modal de Réservation -->
+    <div id="modal-reservation" class="modal-overlay">
+        <div class="modal-content modal-lg">
+            <span class="close-btn" onclick="closeModal('modal-reservation')">&times;</span>
+            <h3 id="modal-car-title">Réservation</h3>
+            
+            <div id="alert-dates-container"></div>
 
-    <!-- Modale pour choisir une voiture spécifique -->
-    <div id="modal-choix-specifique" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal('modal-choix-specifique')">&times;</span>
-            <h3 id="modal-choix-titre">Choisir un véhicule</h3>
-            <div id="modal-choix-body"></div>
+            <form id="form-reservation" onsubmit="soumettreReservation(event)">
+                <input type="hidden" id="resa-car-id">
+                <input type="hidden" id="resa-prix-24h">
+
+                <!-- Choix du mode de réservation -->
+                <div class="type-reservation-selector">
+                    <label class="radio-card">
+                        <input type="radio" name="type_reservation" value="pre_reservation" checked onchange="toggleModePaiement()">
+                        <div class="card-body">
+                            <strong>Pré-réserver</strong>
+                            <small>La voiture reste disponible tant que l'acompte n'est pas payé.</small>
+                        </div>
+                    </label>
+                    <label class="radio-card">
+                        <input type="radio" name="type_reservation" value="acompte" onchange="toggleModePaiement()">
+                        <div class="card-body">
+                            <strong>Réserver (Payer l'acompte)</strong>
+                            <small>Acompte min. 50 000 Ar ou 50 % pour bloquer le véhicule.</small>
+                        </div>
+                    </label>
+                </div>
+
+                <hr>
+
+                <!-- Dates et Heures -->
+                <h4>1. Dates & Horaires</h4>
+                <div class="grid-form-2">
+                    <div>
+                        <label>Date & Heure de début *</label>
+                        <div class="datetime-group">
+                            <input type="date" id="resa-date-debut" required onchange="calculerEtVerifierDates()">
+                            <input type="time" id="resa-heure-debut" value="08:00" required onchange="calculerEtVerifierDates()">
+                        </div>
+                    </div>
+                    <div>
+                        <label>Date & Heure de fin *</label>
+                        <div class="datetime-group">
+                            <input type="date" id="resa-date-fin" required onchange="calculerEtVerifierDates()">
+                            <input type="time" id="resa-heure-fin" value="18:00" required onchange="calculerEtVerifierDates()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Récapitulatif dynamique -->
+                <div id="recapitulatif-box"></div>
+
+                <hr>
+
+                <!-- Infos Client -->
+                <h4>2. Informations personnelles</h4>
+                <div class="grid-form-2">
+                    <div><label>Nom complet *</label><input type="text" id="resa-nom" required></div>
+                    <div><label>Adresse E-mail *</label><input type="email" id="resa-email" required></div>
+                    <div><label>N° Téléphone *</label><input type="tel" id="resa-tel" required></div>
+                    <div><label>N° WhatsApp *</label><input type="tel" id="resa-whatsapp" required></div>
+                    <div><label>N° CIN / Passeport *</label><input type="text" id="resa-cin" required></div>
+                    <div><label>Date de délivrance CIN *</label><input type="date" id="resa-cin-date" required></div>
+                    <div><label>N° Permis de conduire *</label><input type="text" id="resa-permis" required></div>
+                    <div><label>Date de délivrance Permis *</label><input type="date" id="resa-permis-date" required></div>
+                </div>
+
+                <!-- Paiement (Affiché seulement si acompte choisi) -->
+                <div id="section-paiement-acompte" style="display:none;">
+                    <hr>
+                    <h4>3. Règlement de l'acompte (MVola)</h4>
+                    <p class="info-pay">Effectuez le transfert MVola au <strong>034 XX XX XX XX</strong> puis saisissez la référence :</p>
+                    <div class="grid-form-2">
+                        <div><label>Montant payé (Ar) *</label><input type="number" id="resa-montant-acompte" min="50000" placeholder="Ex: 50000"></div>
+                        <div><label>Référence MVola *</label><input type="text" id="resa-ref-mvola" placeholder="Ex: 123456789"></div>
+                    </div>
+                </div>
+
+                <hr>
+                
+                <div class="conditions-check">
+                    <label>
+                        <input type="checkbox" id="resa-accept-conditions" required>
+                        J'ai lu et j'accepte les <a href="#" onclick="openConditionsModal(); return false;">Conditions Générales de Location</a>.
+                    </label>
+                </div>
+
+                <button type="submit" id="btn-submit-resa" class="btn-full btn-primary" style="margin-top:15px;">Confirmer la réservation</button>
+            </form>
         </div>
     </div>
 
+    <!-- Footer -->
+    <footer class="main-footer">
+        <p id="footer-nif-stat">NIF & STAT...</p>
+        <div class="social-links">
+            <a id="link-facebook" href="#" target="_blank" style="display:none;"><i class="fab fa-facebook"></i> Facebook</a>
+            <a id="link-tiktok" href="#" target="_blank" style="display:none;"><i class="fab fa-tiktok"></i> TikTok</a>
+        </div>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.js"></script>
     <script src="common.js"></script>
-    <script src="script-voitures.js"></script>
+    <script src="voitures.js"></script>
 </body>
 </html>
