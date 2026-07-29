@@ -3,97 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Location Tana - Accueil</title>
+    <title>Connexion Administration - Location Tana</title>
     <link rel="stylesheet" href="style-ui.css">
-    <!-- Supabase CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .login-wrapper {
+            min-height: 80vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid var(--border-dark, #334155);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+        .login-card h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #38bdf8;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #fff;
+            outline: none;
+        }
+        .form-group input:focus {
+            border-color: #38bdf8;
+        }
+    </style>
 </head>
 <body>
 
-    <!-- MAIN HEADER -->
     <header class="main-header">
-        <div class="nav-container">
-            <a href="index.html" class="logo">LOCATION TANA</a>
-            <ul class="nav-links">
-                <li><a href="index.html" class="nav-link active">Accueil</a></li>
-                <li><a href="voitures.html" class="nav-link">Véhicules</a></li>
-                <li><button class="btn-conditions" id="btn-conditions">Nos Conditions</button></li>
-            </ul>
-        </div>
+        <a href="index.html" class="logo-container">
+            <span style="font-weight: bold; color: #38bdf8; font-size: 1.2rem;">LOCATION TANA</span>
+        </a>
+        <nav class="main-nav">
+            <a href="index.html">← Retour au site</a>
+        </nav>
     </header>
 
-    <!-- SECTION HERO -->
-    <section style="text-align: center; padding: 4rem 1.5rem; background: linear-gradient(180deg, rgba(56,189,248,0.1) 0%, transparent 100%);">
-        <h1 style="font-size: 2.8rem; margin-bottom: 1rem;">Louez votre véhicule à Madagascar en toute sérénité</h1>
-        <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 2rem auto;">
-            Large choix de véhicules confortables avec ou sans chauffeur pour tous vos déplacements.
-        </p>
-        <a href="voitures.html" class="btn-reserve" style="display: inline-block; width: auto; padding: 0.8rem 2rem; font-size: 1rem;">
-            Voir nos véhicules
-        </a>
-    </section>
-
-    <!-- SECTION ENGAGEMENTS -->
-    <section class="engagements-section">
-        <h2 class="section-title">Nos Engagements</h2>
-        <div class="engagements-grid" id="engagements-container">
-            <div class="engagement-card">
-                <span class="engagement-icon">🚗</span>
-                <h3 class="engagement-title">Véhicules Vérifiés</h3>
-                <p class="engagement-desc">Flotte régulièrement entretenue pour garantir sécurité et confort optimal.</p>
-            </div>
-            <div class="engagement-card">
-                <span class="engagement-icon">⏱️</span>
-                <h3 class="engagement-title">Assistance 24/7</h3>
-                <p class="engagement-desc">Notre équipe vous accompagne à tout moment sur les routes malgaches.</p>
-            </div>
-            <div class="engagement-card">
-                <span class="engagement-icon">💰</span>
-                <h3 class="engagement-title">Prix Transparents</h3>
-                <p class="engagement-desc">Aucun frais caché. Facturation claire et acompte sécurisé.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- MODAL NOS CONDITIONS -->
-    <div class="modal-overlay" id="modal-conditions">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 class="modal-title">Nos Conditions de Location</h3>
-                <button class="modal-close" id="close-modal-conditions">&times;</button>
-            </div>
-            <div class="conditions-list">
-                <div class="condition-item">
-                    <h4>🪪 Documents requis</h4>
-                    <p>Permis de conduire valide (minimum 2 ans de permis) et pièce d'identité (CIN ou Passeport).</p>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <h2>Espace Admin</h2>
+            <form id="form-login" onsubmit="connexionAdmin(event)">
+                <div class="form-group">
+                    <label>E-mail / Utilisateur</label>
+                    <input type="email" id="login-email" required placeholder="admin@locationtana.mg">
                 </div>
-                <div class="condition-item">
-                    <h4>💳 Acompte & Paiement</h4>
-                    <p>Un acompte à la réservation est exigé. Le solde est payable lors de la prise en charge du véhicule.</p>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
                 </div>
-                <div class="condition-item">
-                    <h4>⛽ Carburant</h4>
-                    <p>Le véhicule est remis avec le plein et doit être restitué avec le même niveau de carburant.</p>
-                </div>
-                <div class="condition-item">
-                    <h4>👨‍✈️ Option Chauffeur</h4>
-                    <p>Pour les trajets hors ville ou pistes (ex: 4x4), les frais de nourriture du chauffeur sont inclus.</p>
-                </div>
-            </div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Se connecter</button>
+            </form>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
     <script>
-        // Gestion ouverture/fermeture du Modal Conditions
-        const btnConditions = document.getElementById('btn-conditions');
-        const modalConditions = document.getElementById('modal-conditions');
-        const closeModal = document.getElementById('close-modal-conditions');
+        async function connexionAdmin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
 
-        btnConditions.addEventListener('click', () => modalConditions.classList.add('active'));
-        closeModal.addEventListener('click', () => modalConditions.classList.remove('active'));
-        modalConditions.addEventListener('click', (e) => {
-            if (e.target === modalConditions) modalConditions.classList.remove('active');
-        });
+            try {
+                const { data, error } = await sb.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) throw error;
+
+                // Redirection vers le tableau de bord admin
+                window.location.href = "admin.html";
+            } catch (err) {
+                alert("Erreur d'authentification : " + err.message);
+            }
+        }
     </script>
 </body>
 </html>
