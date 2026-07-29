@@ -3,184 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nos Véhicules - Location</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Location Tana - Nos Véhicules</title>
     <link rel="stylesheet" href="style-ui.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-    <!-- En-tête -->
+    <!-- NAVBAR -->
     <header class="main-header">
-        <div class="logo-container">
-            <img id="site-logo" src="logo.png" alt="Logo">
+        <div class="nav-container">
+            <a href="index.html" class="logo">LOCATION TANA</a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Accueil</a></li>
+                <li><a href="voitures.html" class="nav-link active">Véhicules</a></li>
+                <li><button class="btn-conditions" id="btn-conditions">Nos Conditions</button></li>
+            </ul>
         </div>
-        <nav class="main-nav">
-            <a href="index.html">Accueil</a>
-            <a href="voitures.html" class="active">Véhicules</a>
-            <a href="login.html">Espace Admin</a>
-        </nav>
     </header>
 
-    <main class="container">
-        <h2>Nos Véhicules Disponibles</h2>
-
-        <!-- Engagements (Chargés via common.js) -->
-        <section id="engagements-container" class="engagements-grid"></section>
-
-        <!-- Lien vers les conditions -->
-        <div class="conditions-banner">
-            <p>💡 Prenez connaissance de nos <a href="#" onclick="openConditionsModal(); return false;">Conditions Générales de Location</a> avant de réserver.</p>
-        </div>
-
-        <!-- Filtres de Recherche -->
-        <section class="filters-card">
-            <h3><i class="fas fa-filter"></i> Filtrer la recherche</h3>
+    <!-- FILTRES & TRI -->
+    <section class="filters-container">
+        <div class="filters-card">
             <div class="filters-grid">
-                <div>
-                    <label>Nombre de places</label>
-                    <select id="filter-places" onchange="filtrerVoitures()">
-                        <option value="">Toutes</option>
-                        <option value="2">2 places</option>
-                        <option value="5">5 places</option>
-                        <option value="7">7 places et +</option>
+                <div class="filter-group">
+                    <label for="search-input">Recherche par nom</label>
+                    <input type="text" id="search-input" class="filter-input" placeholder="ex: Prado, Berline...">
+                </div>
+                <div class="filter-group">
+                    <label for="type-select">Type de véhicule</label>
+                    <select id="type-select" class="filter-select">
+                        <option value="all">Tous les types</option>
+                        <option value="4x4">4x4 / SUV</option>
+                        <option value="berline">Berline</option>
+                        <option value="citadine">Citadine</option>
                     </select>
                 </div>
-                <div>
-                    <label>Chauffeur</label>
-                    <select id="filter-chauffeur" onchange="filtrerVoitures()">
-                        <option value="">Tous</option>
-                        <option value="avec_chauffeur_inclus">Avec chauffeur inclus</option>
-                        <option value="sans_chauffeur_special">Sans chauffeur</option>
-                        <option value="mixte">Mixte</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Transmission</label>
-                    <select id="filter-transmission" onchange="filtrerVoitures()">
-                        <option value="">Toutes</option>
-                        <option value="Manuelle">Manuelle</option>
-                        <option value="Automatique">Automatique</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Carburant</label>
-                    <select id="filter-carburant" onchange="filtrerVoitures()">
-                        <option value="">Tous</option>
-                        <option value="Essence">Essence</option>
-                        <option value="Diesel">Diesel</option>
-                        <option value="Hybride">Hybride</option>
+                <div class="filter-group">
+                    <label for="sort-select">Trier par prix</label>
+                    <select id="sort-select" class="filter-select">
+                        <option value="asc">Prix : Croissant</option>
+                        <option value="desc">Prix : Décroissant</option>
                     </select>
                 </div>
             </div>
-        </section>
-
-        <!-- Liste des voitures -->
-        <div id="grid-voitures-public" class="car-grid">
-            <p>Chargement des véhicules...</p>
         </div>
+    </section>
+
+    <!-- LISTE DES VOITURES -->
+    <main class="cars-grid" id="cars-grid">
+        <p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Chargement des véhicules...</p>
     </main>
 
-    <!-- Modal de Réservation -->
-    <div id="modal-reservation" class="modal-overlay">
-        <div class="modal-content modal-lg">
-            <span class="close-btn" onclick="closeModal('modal-reservation')">&times;</span>
-            <h3 id="modal-car-title">Réservation</h3>
-            
-            <div id="alert-dates-container"></div>
-
-            <form id="form-reservation" onsubmit="soumettreReservation(event)">
-                <input type="hidden" id="resa-car-id">
-                <input type="hidden" id="resa-prix-24h">
-
-                <div class="type-reservation-selector">
-                    <label class="radio-card">
-                        <input type="radio" name="type_reservation" value="pre_reservation" checked onchange="toggleModePaiement()">
-                        <div class="card-body">
-                            <strong>Pré-réserver</strong>
-                            <small>Le véhicule reste ouvert aux réservations jusqu'au versement de l'acompte.</small>
-                        </div>
-                    </label>
-                    <label class="radio-card">
-                        <input type="radio" name="type_reservation" value="acompte" onchange="toggleModePaiement()">
-                        <div class="card-body">
-                            <strong>Réserver (Payer acompte)</strong>
-                            <small>Acompte min. 50 000 Ar pour bloquer vos dates.</small>
-                        </div>
-                    </label>
+    <!-- MODAL NOS CONDITIONS -->
+    <div class="modal-overlay" id="modal-conditions">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Nos Conditions de Location</h3>
+                <button class="modal-close" id="close-modal-conditions">&times;</button>
+            </div>
+            <div class="conditions-list">
+                <div class="condition-item">
+                    <h4>🪪 Documents requis</h4>
+                    <p>Permis de conduire valide (minimum 2 ans de permis) et pièce d'identité (CIN ou Passeport).</p>
                 </div>
-
-                <hr>
-
-                <h4>1. Dates & Horaires</h4>
-                <div class="grid-form-2">
-                    <div>
-                        <label>Début *</label>
-                        <div class="datetime-group">
-                            <input type="date" id="resa-date-debut" required onchange="calculerEtVerifierDates()">
-                            <input type="time" id="resa-heure-debut" value="08:00" required onchange="calculerEtVerifierDates()">
-                        </div>
-                    </div>
-                    <div>
-                        <label>Fin *</label>
-                        <div class="datetime-group">
-                            <input type="date" id="resa-date-fin" required onchange="calculerEtVerifierDates()">
-                            <input type="time" id="resa-heure-fin" value="18:00" required onchange="calculerEtVerifierDates()">
-                        </div>
-                    </div>
+                <div class="condition-item">
+                    <h4>💳 Acompte & Paiement</h4>
+                    <p>Un acompte à la réservation est exigé. Le solde est payable lors de la prise en charge du véhicule.</p>
                 </div>
-
-                <div id="recapitulatif-box"></div>
-
-                <hr>
-
-                <h4>2. Informations Personnelles</h4>
-                <div class="grid-form-2">
-                    <div><label>Nom complet *</label><input type="text" id="resa-nom" required></div>
-                    <div><label>Adresse E-mail *</label><input type="email" id="resa-email" required></div>
-                    <div><label>N° Téléphone *</label><input type="tel" id="resa-tel" required></div>
-                    <div><label>N° WhatsApp *</label><input type="tel" id="resa-whatsapp" required></div>
-                    <div><label>N° CIN / Passeport *</label><input type="text" id="resa-cin" required></div>
-                    <div><label>Date de délivrance CIN *</label><input type="date" id="resa-cin-date" required></div>
-                    <div><label>N° Permis de conduire *</label><input type="text" id="resa-permis" required></div>
-                    <div><label>Date de délivrance Permis *</label><input type="date" id="resa-permis-date" required></div>
+                <div class="condition-item">
+                    <h4>⛽ Carburant</h4>
+                    <p>Le véhicule est remis avec le plein et doit être restitué avec le même niveau de carburant.</p>
                 </div>
-
-                <div id="section-paiement-acompte" style="display:none;">
-                    <hr>
-                    <h4>3. Règlement par MVola</h4>
-                    <p class="info-pay">Effectuez votre paiement au numéro MVola puis entrez la référence :</p>
-                    <div class="grid-form-2">
-                        <div><label>Montant payé (Ar) *</label><input type="number" id="resa-montant-acompte" min="50000" placeholder="Ex: 50000"></div>
-                        <div><label>Référence MVola *</label><input type="text" id="resa-ref-mvola" placeholder="Ex: 123456789"></div>
-                    </div>
-                </div>
-
-                <hr>
-                
-                <div class="conditions-check">
-                    <label>
-                        <input type="checkbox" id="resa-accept-conditions" required>
-                        J'ai lu et j'accepte les <a href="#" onclick="openConditionsModal(); return false;">Conditions Générales de Location</a>.
-                    </label>
-                </div>
-
-                <button type="submit" id="btn-submit-resa" class="btn-full btn-primary" style="margin-top:15px;">Confirmer la réservation</button>
-            </form>
+            </div>
         </div>
     </div>
 
-    <!-- Pied de page -->
-    <footer class="main-footer">
-        <p id="footer-nif-stat">Chargement...</p>
-        <div class="social-links">
-            <a id="link-facebook" href="#" target="_blank" style="display:none;"><i class="fab fa-facebook"></i> Facebook</a>
-            <a id="link-tiktok" href="#" target="_blank" style="display:none;"><i class="fab fa-tiktok"></i> TikTok</a>
-        </div>
-    </footer>
+    <!-- SCRIPT DE CHARGEMENT SUPABASE FIXÉ -->
+    <script>
+        // 1. Initialisation Supabase
+        const SUPABASE_URL = 'https://xxlehrxxrcuismlcnwhh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4bGVocnh4cmN1aXNtbGNud2hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1MDk3ODMsImV4cCI6MjA1NDA4NTc4M30.6i-6pE_tX-C1S4X2C-Y8y9Z_0_X'; 
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    <!-- Scripts CDN et locaux -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="common.js"></script>
-    <script src="voitures.js"></script>
+        let voituresData = [];
+
+        async function loadVoitures() {
+            const grid = document.getElementById('cars-grid');
+            try {
+                const { data, error } = await sb.from('voitures').select('*');
+                if (error) throw error;
+                
+                voituresData = data || [];
+                renderVoitures(voituresData);
+            } catch (err) {
+                console.error("Erreur de chargement Supabase:", err);
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--accent-danger);">
+                    Impossible de charger les véhicules. Vérifiez les droits Supabase (RLS).
+                </p>`;
+            }
+        }
+
+        function renderVoitures(list) {
+            const grid = document.getElementById('cars-grid');
+            if (list.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Aucun véhicule disponible.</p>`;
+                return;
+            }
+
+            grid.innerHTML = list.map(v => `
+                <div class="car-card">
+                    <img src="${v.image_url || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=500'}" class="car-img" alt="${v.nom}">
+                    <div class="car-content">
+                        <h3 class="car-title">${v.nom}</h3>
+                        <div class="car-price">${v.prix_journalier ? v.prix_journalier.toLocaleString() + ' Ar / jour' : 'Prix sur demande'}</div>
+                        <button class="btn-reserve" onclick="alert('Réservation pour ${v.nom}')">Réserver</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filtres & Tri
+        document.getElementById('search-input').addEventListener('input', applyFilters);
+        document.getElementById('sort-select').addEventListener('change', applyFilters);
+
+        function applyFilters() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const sortOrder = document.getElementById('sort-select').value;
+
+            let filtered = voituresData.filter(v => v.nom.toLowerCase().includes(query));
+
+            filtered.sort((a, b) => {
+                const pA = a.prix_journalier || 0;
+                const pB = b.prix_journalier || 0;
+                return sortOrder === 'asc' ? pA - pB : pB - pA;
+            });
+
+            renderVoitures(filtered);
+        }
+
+        // Modal Conditions
+        document.getElementById('btn-conditions').addEventListener('click', () => document.getElementById('modal-conditions').classList.add('active'));
+        document.getElementById('close-modal-conditions').addEventListener('click', () => document.getElementById('modal-conditions').classList.remove('active'));
+
+        // Lancer le chargement au démarrage
+        document.addEventListener('DOMContentLoaded', loadVoitures);
+    </script>
 </body>
 </html>
