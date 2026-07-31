@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="style-ui.css">
     <style>
-        /* Légende du calendrier */
         .cal-legend { display: flex; gap: 12px; margin: 10px 0; font-size: 0.85rem; flex-wrap: wrap; }
         .cal-item { display: flex; align-items: center; gap: 6px; }
         .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
@@ -16,18 +15,9 @@
         .dot-orange { background: #f59e0b; }
         .dot-noir { background: #1e293b; border: 1px solid #475569; }
 
-        /* Grille du calendrier */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; background: #0f172a; padding: 10px; border-radius: 8px; }
-        .cal-day { padding: 8px; text-align: center; border-radius: 4px; font-size: 0.8rem; font-weight: bold; color: #fff; }
-        .cal-day.dispo { background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; }
-        .cal-day.prereserve { background: #64748b; color: #fff; cursor: not-allowed; }
-        .cal-day.reserve { background: #f59e0b; color: #fff; cursor: not-allowed; }
-        .cal-day.maintenance { background: #000; border: 1px solid #334155; color: #ef4444; cursor: not-allowed; }
-
-        /* Récapitulatif Prix */
         .recap-box { background: #0f172a; border: 1px solid #334155; padding: 15px; border-radius: 8px; margin-top: 15px; }
-        .recap-line { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9rem; }
-        .recap-total { font-weight: bold; color: #38bdf8; font-size: 1.1rem; border-top: 1px solid #334155; padding-top: 8px; margin-top: 8px; }
+        .recap-line { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9rem; color: #cbd5e1; }
+        .recap-total { font-weight: bold; color: #38bdf8; font-size: 1.15rem; border-top: 1px solid #334155; padding-top: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -40,46 +30,44 @@
             <a href="index.html">Accueil</a>
             <a href="voitures.html" class="active">Véhicules</a>
             <button class="btn-conditions-nav" onclick="openModal('modal-conditions')"><i class="fas fa-file-contract"></i> Nos Conditions</button>
-            <a href="admin.html">Espace Admin</a>
+            <a href="login.html">Espace Admin</a>
         </nav>
     </header>
 
-    <main class="container">
-        <h2>Nos Véhicules Disponibles</h2>
+    <main class="container" style="padding-top: 30px; padding-bottom: 50px;">
+        <h2 style="margin-bottom: 20px;">Nos Véhicules Disponibles</h2>
         <div id="grid-voitures-public" class="car-grid">
             <p>Chargement des véhicules...</p>
         </div>
     </main>
 
-    <!-- MODAL DE RÉSERVATION AVEC CALENDRIER ET OPTIONS -->
+    <!-- MODAL DE RÉSERVATION -->
     <div id="modal-reservation" class="modal-overlay">
         <div class="modal-content" style="max-width: 750px;">
             <span class="close-btn" onclick="closeModal('modal-reservation')">&times;</span>
             <h3 id="modal-car-title">Réservation</h3>
 
-            <!-- DISPONIBILITÉ / CALENDRIER -->
+            <!-- CALENDRIER -->
             <div style="margin-bottom: 20px;">
-                <h4 style="margin-bottom: 5px; color: #38bdf8;">Disponibilité du véhicule</h4>
+                <h4 style="margin-bottom: 5px; color: #38bdf8;">Disponibilité du véhicule (14 prochains jours)</h4>
                 <div class="cal-legend">
                     <span class="cal-item"><span class="dot dot-vert"></span> Dispo</span>
-                    <span class="cal-item"><span class="dot dot-gris"></span> Pré-réservé (0 Ar)</span>
-                    <span class="cal-item"><span class="dot dot-orange"></span> Réservé (Acompte payé)</span>
-                    <span class="cal-item"><span class="dot dot-noir"></span> En maintenance</span>
+                    <span class="cal-item"><span class="dot dot-gris"></span> Pré-réservé</span>
+                    <span class="cal-item"><span class="dot dot-orange"></span> Réservé</span>
+                    <span class="cal-item"><span class="dot dot-noir"></span> Maintenance</span>
                 </div>
-                <div id="car-calendar-display" class="calendar-grid">
-                    <!-- Généré dynamiquement en JS -->
-                </div>
+                <div id="car-calendar-display" class="calendar-grid"></div>
             </div>
 
-            <!-- FORMULAIRE DE RÉSERVATION -->
+            <!-- FORMULAIRE -->
             <form id="form-reservation" onsubmit="soumettreReservationEtWhatsapp(event)">
                 <input type="hidden" id="resa-car-id">
 
                 <div class="grid-form-2">
-                    <div><label>Nom *</label><input type="text" id="resa-nom" required></div>
-                    <div><label>Prénom *</label><input type="text" id="resa-prenom" required></div>
+                    <div><label>Nom *</label><input type="text" id="resa-nom" required placeholder="Votre nom"></div>
+                    <div><label>Prénom *</label><input type="text" id="resa-prenom" required placeholder="Votre prénom"></div>
                     <div><label>Téléphone / WhatsApp *</label><input type="tel" id="resa-tel" placeholder="+261 34 ..." required></div>
-                    <div><label>Email *</label><input type="email" id="resa-email" required></div>
+                    <div><label>Email *</label><input type="email" id="resa-email" required placeholder="nom@exemple.mg"></div>
                 </div>
 
                 <hr style="border-color: #334155; margin: 15px 0;">
@@ -93,6 +81,8 @@
                         <label>Heure de départ *</label>
                         <select id="resa-heure-debut" onchange="calculerTarifEtVerifierDispo()" required>
                             <option value="07:00">07h00</option>
+                            <option value="08:00" selected>08h00</option>
+                            <option value="12:00">12h00</option>
                             <option value="19:00">19h00</option>
                         </select>
                     </div>
@@ -103,6 +93,8 @@
                     <div>
                         <label>Heure de retour *</label>
                         <select id="resa-heure-fin" onchange="calculerTarifEtVerifierDispo()" required>
+                            <option value="12:00">12h00</option>
+                            <option value="18:00" selected>18h00</option>
                             <option value="19:00">19h00</option>
                             <option value="06:00">06h00 (Lendemain)</option>
                         </select>
@@ -126,41 +118,55 @@
                     </div>
                 </div>
 
-                <!-- OPTIONS -->
-                <div style="margin-top: 15px; background: rgba(15, 23, 42, 0.5); padding: 12px; border-radius: 6px;">
-                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;" id="box-option-chauffeur">
+                <!-- OPTIONS DE LIVRAISON ET RÉCUPÉRATION : 15.000 AR PAR DÉFAUT CHACUN -->
+                <div style="margin-top: 15px; background: rgba(15, 23, 42, 0.5); padding: 12px; border-radius: 6px; border: 1px solid #334155;">
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;" id="box-option-chauffeur">
                         <input type="checkbox" id="opt-chauffeur" onchange="calculerTarifEtVerifierDispo()">
                         Option Chauffeur (+40.000 Ar / jour)
                     </label>
                     <div class="grid-form-2">
                         <div>
                             <label>Livraison voiture (Ar)</label>
-                            <input type="number" id="opt-livraison" value="0" step="5000" oninput="calculerTarifEtVerifierDispo()">
+                            <input type="number" id="opt-livraison" value="15000" step="5000" oninput="calculerTarifEtVerifierDispo()">
                         </div>
                         <div>
                             <label>Récupération voiture (Ar)</label>
-                            <input type="number" id="opt-recuperation" value="0" step="5000" oninput="calculerTarifEtVerifierDispo()">
+                            <input type="number" id="opt-recuperation" value="15000" step="5000" oninput="calculerTarifEtVerifierDispo()">
                         </div>
                     </div>
                 </div>
 
-                <!-- ALERTE INDISPONIBILITÉ -->
                 <div id="alert-indispo" style="display: none; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; padding: 10px; border-radius: 6px; margin-top: 15px; text-align: center; font-weight: bold;">
                     ⚠️ Ce véhicule est déjà réservé ou en maintenance pour la période sélectionnée.
                 </div>
 
-                <!-- RECAPITULATIF FINANCIER -->
                 <div class="recap-box">
                     <div class="recap-line"><span>Durée :</span> <strong id="recap-duree">0 jour(s)</strong></div>
                     <div class="recap-line"><span>Tarif appliqué :</span> <span id="recap-formule">-</span></div>
-                    <div class="recap-line"><span>Options & Livraison :</span> <span id="recap-options">0 Ar</span></div>
-                    <div class="recap-line recap-total"><span>Prix Total :</span> <span id="recap-total">0 Ar</span></div>
+                    <div class="recap-line"><span>Options & Livraison :</span> <span id="recap-options">30 000 Ar</span></div>
+                    <div class="recap-line recap-total"><span>Prix Total Estimé :</span> <span id="recap-total">0 Ar</span></div>
                 </div>
 
-                <button type="submit" id="btn-submit-resa" class="btn-primary" style="margin-top: 15px; background: #25D366; color: #fff; font-size: 1.05rem;">
+                <button type="submit" id="btn-submit-resa" class="btn-primary" style="margin-top: 15px; width: 100%; background: #25D366; color: #fff; font-size: 1.05rem; border: none; padding: 12px; cursor: pointer;">
                     <i class="fab fa-whatsapp"></i> Envoyer la réservation sur WhatsApp
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL CONDITIONS -->
+    <div id="modal-conditions" class="modal-overlay">
+        <div class="modal-content" style="max-width: 650px;">
+            <span class="close-btn" onclick="closeModal('modal-conditions')">&times;</span>
+            <h3 style="color: #38bdf8; margin-bottom: 15px;"><i class="fas fa-file-contract"></i> Conditions de Location</h3>
+            <div style="font-size: 0.9rem; line-height: 1.6; color: #cbd5e1; max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+                <p><strong>1. Pièces à fournir :</strong> Permis de conduire valide (+2 ans) et CIN/Passeport originaux.</p>
+                <p><strong>2. Caution :</strong> Une caution obligatoire est exigée avant le départ pour toute location sans chauffeur.</p>
+                <p><strong>3. Carburant :</strong> Le véhicule est livré avec le niveau de carburant mentionné sur le contrat et doit être restitué au même niveau.</p>
+                <p><strong>4. Utilisation :</strong> Usage strictement réservé au territoire malgache. Sous-location interdite.</p>
+                <p><strong>5. Prolongation :</strong> Toute prolongation doit faire l'objet d'un accord préalable au moins 24h à l'avance.</p>
+            </div>
+            <button class="btn-primary" style="margin-top: 20px; width: 100%;" onclick="closeModal('modal-conditions')">Fermer</button>
         </div>
     </div>
 
