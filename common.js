@@ -1,51 +1,65 @@
 /* ==========================================================================
-   SCRIPT COMMON & CONFIGURATION GLOBAL (common.js)
+   CONFIGURATION SUPABASE & UTILITAIRES GLOBAUX (common.js)
    ========================================================================== */
 
-const SUPABASE_URL = 'https://xxlehrxxrcuismlcnwhh.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4bGVocnh4cmN1aXNtbGNud2hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NDk2MjYsImV4cCI6MjEwMDIyNTYyNn0.148ZtlXhbfSlPJmZ6j2IzVDyGL8wXvhAxfoyxXhmCdw';
+const SUPABASE_URL = "YOUR_SUPABASE_URL"; // Remplacer par votre URL Supabase
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; // Remplacer par votre clé Anon Supabase
 
-// Unique instance Supabase réutilisable
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Formatters
+// Formater les montants en Ariary (Ar)
 function formatPrix(montant) {
-    return new Intl.NumberFormat('fr-FR').format(montant || 0) + ' Ar';
+    if (montant === null || montant === undefined || isNaN(montant)) return '0 Ar';
+    return new Intl.NumberFormat('fr-FR').format(montant) + ' Ar';
 }
 
-function genererRefFacture(index = 1) {
-    const d = new Date();
-    const aaaa = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const jj = String(d.getDate()).padStart(2, '0');
-    const hh = String(d.getHours()).padStart(2, '0');
-    const ss = String(d.getSeconds()).padStart(2, '0');
-    const seq = String(index).padStart(3, '0');
-
-    return `FAC_${aaaa}_${mm}_${jj}_${hh}_${ss}_${seq}`;
+// Affichage / Fermeture des modales
+function toggleModal(modalId, show = true) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = show ? 'flex' : 'none';
+    }
 }
 
-function genererRefClient(nom, prenom = '') {
-    const d = new Date();
-    const aaaa = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const jj = String(d.getDate()).padStart(2, '0');
+function openModal(modalId) { toggleModal(modalId, true); }
+function closeModal(modalId) { toggleModal(modalId, false); }
 
-    const nomClean = `${nom}_${prenom}`
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9_]/g, "_")
-        .replace(/_+/g, "_")
-        .replace(/^_|_$/g, "");
-
-    return `CLT_${aaaa}_${mm}_${jj}_${nomClean}`;
+// Génération de références
+function genererRefClient(nom, prenom) {
+    const n = (nom || 'CLI').substring(0, 3).toUpperCase();
+    const p = (prenom || 'CLI').substring(0, 3).toUpperCase();
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    return `CLI-${n}${p}-${rand}`;
 }
 
-function openModal(id) {
+function genererRefFacture() {
+    const now = new Date();
+    const dateStr = now.getFullYear().toString() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+    const rand = Math.floor(100 + Math.random() * 900);
+    return `FACT-${dateStr}-${rand}`;
+}
+
+function setText(id, text) {
     const el = document.getElementById(id);
-    if (el) el.classList.add('active');
+    if (el) el.innerText = text;
 }
 
-function closeModal(id) {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('active');
+// Vérification de la session admin
+async function checkAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+        window.location.href = 'login.html';
+    }
 }
+
+// Déconnexion
+async function seDeconnecter() {
+    await sb.auth.signOut();
+    window.location.href = 'login.html';
+}
+
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal-overlay')) {
+        event.target.style.display = 'none';
+    }
+};
