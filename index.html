@@ -3,59 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Location Tana - Accueil</title>
+    <title>Location Tana - Location de véhicules à Madagascar</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="style-ui.css">
+    <style>
+        .hero-section {
+            padding: 80px 20px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(15,23,42,0.6) 0%, rgba(15,23,42,1) 100%), url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1200') center/cover no-repeat;
+            border-bottom: 1px solid var(--border-dark);
+        }
+        .hero-title { font-size: 2.8rem; margin-bottom: 15px; color: #fff; }
+        .hero-subtitle { font-size: 1.2rem; color: var(--text-muted); max-width: 600px; margin: 0 auto 30px auto; }
+        
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-top: 40px; }
+        .flip-card { background-color: transparent; width: 100%; height: 180px; perspective: 1000px; cursor: pointer; }
+        .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
+        .flip-card.flipped .flip-card-inner, .flip-card:hover .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid var(--border-dark); }
+        .flip-card-front { background-color: var(--bg-card); color: #fff; }
+        .flip-card-back { background-color: #0f172a; color: var(--accent-blue); transform: rotateY(180deg); border-color: var(--accent-blue); }
+        .feature-emoji { font-size: 2.5rem; margin-bottom: 10px; }
+    </style>
 </head>
 <body>
 
-    <header class="navbar">
+    <header class="main-header">
         <a href="index.html" class="logo-container">
-            <img id="header-logo" src="https://i.ibb.co/dw8gxWXL/1765001359376.png" alt="Logo" class="nav-logo">
-            <span id="header-site-name">Location Tana</span>
+            <span style="font-size: 1.2rem; font-weight: bold; color: var(--accent-blue);">LOCATION TANA</span>
         </a>
-        <ul class="nav-links">
-            <li><a href="index.html" class="active">Accueil</a></li>
-            <li><a href="voitures.html">Nos voitures</a></li>
-            <li><button class="btn-conditions-nav" onclick="openModal('modal-conditions')"><i class="fas fa-file-contract"></i> Nos Conditions</button></li>
-            <li><a href="login.html" class="nav-link">Portail Admin</a></li>
-        </ul>
+        <nav class="main-nav">
+            <a href="index.html" class="active">Accueil</a>
+            <a href="voitures.html">Véhicules</a>
+            <a href="login.html">Espace Admin</a>
+        </nav>
     </header>
 
-    <main class="container">
-        <section class="hero-banner">
-            <h1>Location Tana</h1>
-            <p>Location de voitures entre particulier et professionnel. Facile, rapide et sans coût caché.</p>
-            <a href="voitures.html" class="btn-hero">Voir nos véhicules</a>
-        </section>
+    <section class="hero-section">
+        <h1 class="hero-title">Louez le véhicule idéal pour vos déplacements à Antananarivo</h1>
+        <p class="hero-subtitle">Des berlines confortables et des 4x4 robustes, avec ou sans chauffeur, adaptés à tous vos besoins.</p>
+        <a href="voitures.html" class="btn-primary" style="font-size: 1.1rem; padding: 14px 28px;">
+            Voir nos véhicules disponibles <i class="fas fa-arrow-right"></i>
+        </a>
+    </section>
 
-        <section>
-            <h2 class="section-title">Nos Engagements</h2>
-            <div id="features-container" class="features-container">
-                <!-- Les cartes d'engagements sont générées ici via index.js -->
-            </div>
-        </section>
+    <main class="container" style="padding: 50px 20px;">
+        <h2 style="text-align: center; margin-bottom: 10px;">Nos Engagements & Services</h2>
+        <p style="text-align: center; color: var(--text-muted);">Survolez ou cliquez sur les cartes pour en savoir plus.</p>
+        
+        <div id="features-container" class="features-grid"></div>
     </main>
-
-    <!-- MODAL NOS CONDITIONS -->
-    <div id="modal-conditions" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal('modal-conditions')">&times;</span>
-            <h3>Conditions Générales de Location</h3>
-            <hr style="border-color: var(--border-dark); margin: 15px 0;">
-            <div style="font-size: 0.95rem; line-height: 1.7;">
-                <p><strong>1. Conditions du Conducteur :</strong> Le locataire doit être âgé d'au moins 21 ans et être titulaire d'un permis de conduire valide depuis plus de 2 ans.</p>
-                <p><strong>2. Documents Exigés :</strong> Pièce d'identité (CIN ou Passeport original) et justificatif de domicile récents.</p>
-                <p><strong>3. Réservation & Acompte :</strong> La réservation est confirmée dès réception d'un acompte minimal (50 000 Ar par MVola).</p>
-                <p><strong>4. Carburant :</strong> Le véhicule doit être restitué avec le même niveau de carburant qu'au départ.</p>
-            </div>
-        </div>
-    </div>
-
-    <footer class="site-footer">
-        <p>Location Tana - Lot 876, cité 67Ha, Antananarivo 101</p>
-        <p>NIF: 5012357932 | STAT: 70209 11 2025 0 06328</p>
-    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="common.js"></script>
