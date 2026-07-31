@@ -3,16 +3,29 @@
   "version": "2026.1",
   "regles": [
     {
-      "titre": "1. Documents requis",
-      "texte": "Permis de conduire valide (original) et pièce d'identité (CIN ou Passeport) obligatoires lors de la prise du véhicule."
+      "titre": "1. Conditions du conducteur",
+      "texte": "Avoir au moins 21 ans et 2 ans de permis. Présentation obligatoire du permis valide et d'une pièce d'identité."
     },
     {
-      "titre": "2. Acompte et Réservation",
-      "texte": "Toute réservation devient définitive après paiement d'un acompte minimum de 50 000 Ar ou 50% du montant total. En cas de pré-réservation, le véhicule reste disponible aux autres clients tant que l'acompte n'est pas versé."
+      "titre": "2. Réservation et Paiement",
+      "texte": "Acompte de 50% (ou 50 000 Ar minimum) dans les 24h. Le solde est payable avant la remise du véhicule. En cas de non-paiement à J-4, la réservation est annulée."
     },
     {
-      "titre": "3. Carburant et Conduite",
-      "texte": "Le véhicule est livré avec le niveau de carburant restitué à l'identique. Tout retard non signalé de plus de 2 heures entraînera la facturation d'une journée supplémentaire."
-    }
+      "titre": "3. Zone et Kilométrage",
+      "texte": "Usage autorisé à Tananarive (rayon max de 30 km). Accord préalable requis pour les provinces."
+    },
+    {
+      "titre": "4. Carburant",
+      "texte": "Le véhicule doit être rendu avec le même niveau d'essence."
+    },
+    {
+      "titre": "5. Caution et Dommages",
+      "texte": "Sans caution. Le locataire paye l'intégralité des dégradations, réparations, amendes et frais d'immobilisation durant la location."
+    },
+    {
+      "titre": "6. Utilisation du Véhicule",
+      "texte": "Interdiction de sous-louer, d'effectuer du hors-piste, des courses, du transport illégal et d'ouvrir le capot sans accord."
+    },
+
   ]
 }
