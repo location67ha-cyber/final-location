@@ -1,12 +1,12 @@
 /* ==========================================================================
-   SCRIPT CATALOGUE, CALENDRIER & WA (script-voitures.js)
+   CATALOGUE, CALENDRIER & RESERVATION (script-voitures.js)
    ========================================================================== */
 
 let allVoitures = [];
 let currentCar = null;
 let currentReservations = [];
 let currentMaintenances = [];
-const NUMERO_WHATSAPP_ADMIN = "261349120726"; // Votre numéro WhatsApp
+const NUMERO_WHATSAPP_ADMIN = "261349120726";
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadVoituresPublic();
@@ -14,8 +14,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadVoituresPublic() {
     const grid = document.getElementById('grid-voitures-public');
+    if (!grid) return;
+
     try {
-        const { data, error } = await sb.from('voitures').select('*');
+        const { data, error } = await sb.from('voitures').select('*').eq('est_public', true);
         if (error) throw error;
 
         allVoitures = data || [];
@@ -28,31 +30,45 @@ async function loadVoituresPublic() {
 
 function renderVoitures(list) {
     const grid = document.getElementById('grid-voitures-public');
-    grid.innerHTML = list.map(v => `
-        <div class="car-card-pub">
-            <img src="${v.image_url || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=500'}" alt="${v.marque}">
-            <div class="car-info">
-                <h3>${v.marque} ${v.modele}</h3>
-                <div class="car-tags">
-                    <span>${v.places || 5} places</span>
-                    <span>${v.transmission || 'Manuelle'}</span>
+    if (!grid) return;
+
+    grid.innerHTML = list.length ? list.map(v => {
+        const prixAffiche = v.prix_24h_sans_chauffeur || v.prix_24h_avec_chauffeur || 150000;
+        return `
+            <div class="car-card-pub">
+                <img src="${v.image_url || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=500'}" alt="${v.marque}">
+                <div class="car-info">
+                    <h3>${v.marque} ${v.modele}</h3>
+                    <div class="car-tags">
+                        <span>${v.places || 5} places</span>
+                        <span>${v.transmission || 'Manuelle'}</span>
+                        <span>${v.carburant || 'Essence'}</span>
+                    </div>
+                    <p class="car-price">${formatPrix(prixAffiche)} / 24h</p>
+                    <button class="btn-primary" onclick="ouvrirModalReservation(${v.id})">Réserver</button>
                 </div>
-                <p class="car-price">${formatPrix(v.tarif_sans_24h || 150000)} / 24h</p>
-                <button class="btn-primary" onclick="ouvrirModalReservation(${v.id})">Réserver</button>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('') : '<p>Aucun véhicule disponible pour le moment.</p>';
 }
 
 async function ouvrirModalReservation(carId) {
     currentCar = allVoitures.find(v => v.id === carId);
     if (!currentCar) return;
 
-    document.getElementById('form-reservation').reset();
-    document.getElementById('resa-car-id').value = currentCar.id;
-    document.getElementById('modal-car-title').textContent = `Réserver : ${currentCar.marque} ${currentCar.modele}`;
+    const form = document.getElementById('form-reservation');
+    if (form) form.reset();
 
-    // Récupérer les réservations et maintenances existantes pour le calendrier
+    // Réinitialisation explicite à 15.000 Ar par défaut chacun
+    const inputLivraison = document.getElementById('opt-livraison');
+    const inputRecuperation = document.getElementById('opt-recuperation');
+    if (inputLivraison) inputLivraison.value = 15000;
+    if (inputRecuperation) inputRecuperation.value = 15000;
+
+    const carIdInput = document.getElementById('resa-car-id');
+    if (carIdInput) carIdInput.value = currentCar.id;
+    setText('modal-car-title', `Réserver : ${currentCar.marque} ${currentCar.modele}`);
+
     const [resResa, resMaint] = await Promise.all([
         sb.from('reservations').select('*').eq('id_voiture', carId),
         sb.from('maintenances').select('*').eq('id_voiture', carId)
@@ -62,12 +78,13 @@ async function ouvrirModalReservation(carId) {
     currentMaintenances = resMaint.data || [];
 
     afficherCalendrierVoiture();
-    openModal('modal-reservation');
+    calculerTarifEtVerifierDispo();
+    toggleModal('modal-reservation', true);
 }
 
-// Generateur du calendrier visuel
 function afficherCalendrierVoiture() {
     const grid = document.getElementById('car-calendar-display');
+    if (!grid) return;
     grid.innerHTML = '';
 
     const aujourdhui = new Date();
@@ -81,58 +98,57 @@ function afficherCalendrierVoiture() {
         let statusClass = 'dispo';
         let label = `${jourNum} ${moisStr}`;
 
-        // Vérification maintenance (Noir)
-        const inMaintenance = currentMaintenances.some(m => dateStr >= m.date_debut && dateStr <= m.date_fin);
+        const inMaintenance = currentMaintenances.some(m => m.date_prevue === dateStr);
         if (inMaintenance) {
             statusClass = 'maintenance';
         } else {
-            // Vérification Réservation
             const resa = currentReservations.find(r => dateStr >= r.date_debut && dateStr <= r.date_fin);
             if (resa) {
-                if ((resa.montant_paye || 0) > 0) {
-                    statusClass = 'reserve'; // Orange
-                } else {
-                    statusClass = 'prereserve'; // Gris
-                }
+                statusClass = (resa.paiement_montant_declare || 0) > 0 ? 'reserve' : 'prereserve';
             }
         }
 
-        grid.innerHTML += `<div class="cal-day ${statusClass}">${label}</div>`;
+        grid.innerHTML += `<div class="cal-day ${statusClass}" title="${statusClass}">${label}</div>`;
     }
 }
 
-// Calcul des tarifs selon vos règles
 function calculerTarifEtVerifierDispo() {
-    const dateDebut = document.getElementById('resa-date-debut').value;
-    const dateFin = document.getElementById('resa-date-fin').value;
-    const typeTarif = document.getElementById('resa-type-tarif').value; // 'sans_chauffeur' / 'avec_chauffeur'
-    const dureeType = document.getElementById('resa-duree-type').value; // '12h' / '24h'
-    const optChauffeur = document.getElementById('opt-chauffeur').checked;
-    const optLivraison = parseFloat(document.getElementById('opt-livraison').value) || 0;
-    const optRecuperation = parseFloat(document.getElementById('opt-recuperation').value) || 0;
+    const dateDebut = document.getElementById('resa-date-debut')?.value;
+    const heureDebut = document.getElementById('resa-heure-debut')?.value || '08:00';
+    const dateFin = document.getElementById('resa-date-fin')?.value;
+    const heureFin = document.getElementById('resa-heure-fin')?.value || '18:00';
+    const typeTarif = document.getElementById('resa-type-tarif')?.value;
+    const dureeType = document.getElementById('resa-duree-type')?.value;
+    const optChauffeur = document.getElementById('opt-chauffeur')?.checked;
+    
+    const rawLivraison = parseFloat(document.getElementById('opt-livraison')?.value);
+    const rawRecuperation = parseFloat(document.getElementById('opt-recuperation')?.value);
+    const optLivraison = isNaN(rawLivraison) ? 15000 : rawLivraison;
+    const optRecuperation = isNaN(rawRecuperation) ? 15000 : rawRecuperation;
 
     const boxChauffeur = document.getElementById('box-option-chauffeur');
-    if (typeTarif === 'avec_chauffeur') {
-        boxChauffeur.style.display = 'none';
-    } else {
-        boxChauffeur.style.display = 'flex';
+    if (boxChauffeur) {
+        boxChauffeur.style.display = (typeTarif === 'avec_chauffeur') ? 'none' : 'flex';
     }
 
-    if (!dateDebut || !dateFin) return;
+    if (!dateDebut || !dateFin || !currentCar) return;
 
-    // Calcul du nombre de jours
-    const d1 = new Date(dateDebut);
-    const d2 = new Date(dateFin);
-    const diffTime = d2 - d1;
-    let nbrJours = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Calcul précis en heures
+    const dtDebut = new Date(`${dateDebut}T${heureDebut}`);
+    const dtFin = new Date(`${dateFin}T${heureFin}`);
+    const totalHeures = (dtFin - dtDebut) / (1000 * 60 * 60);
+
+    let nbrJours = Math.ceil(totalHeures / 24);
     if (nbrJours <= 0) nbrJours = 1;
 
-    // Vérification Conflits
+    // Vérification disponibilité
     let estOccupe = false;
-    let checkDate = new Date(d1);
-    while (checkDate <= d2) {
+    let checkDate = new Date(dateDebut);
+    const endDateObj = new Date(dateFin);
+
+    while (checkDate <= endDateObj) {
         const curStr = checkDate.toISOString().split('T')[0];
-        const maint = currentMaintenances.some(m => curStr >= m.date_debut && curStr <= m.date_fin);
+        const maint = currentMaintenances.some(m => m.date_prevue === curStr);
         const resa = currentReservations.some(r => curStr >= r.date_debut && curStr <= r.date_fin);
         if (maint || resa) {
             estOccupe = true;
@@ -143,52 +159,41 @@ function calculerTarifEtVerifierDispo() {
 
     const alertBox = document.getElementById('alert-indispo');
     const btnSubmit = document.getElementById('btn-submit-resa');
-    if (estOccupe) {
-        alertBox.style.display = 'block';
-        btnSubmit.disabled = true;
-        btnSubmit.style.opacity = '0.5';
-    } else {
-        alertBox.style.display = 'none';
-        btnSubmit.disabled = false;
-        btnSubmit.style.opacity = '1';
+    if (alertBox && btnSubmit) {
+        alertBox.style.display = estOccupe ? 'block' : 'none';
+        btnSubmit.disabled = estOccupe;
+        btnSubmit.style.opacity = estOccupe ? '0.5' : '1';
     }
 
-    // Détermination du prix unitaire par jour
     let prixBaseJour = 0;
-    const tSans12 = currentCar.tarif_sans_12h || 100000;
-    const tSans24 = currentCar.tarif_sans_24h || 150000;
-    const tAvec12 = currentCar.tarif_avec_12h || 160000;
-    const tAvec24 = currentCar.tarif_avec_24h || 200000;
+    const tSans12 = currentCar.prix_12h_sans_chauffeur || 100000;
+    const tSans24 = currentCar.prix_24h_sans_chauffeur || 150000;
+    const tAvec12 = currentCar.prix_12h_avec_chauffeur || 160000;
+    const tAvec24 = currentCar.prix_24h_avec_chauffeur || 200000;
 
-    // RÈGLE : Si réservation > 3 jours => Tarif 12h x nbrJours
     if (nbrJours > 3) {
         prixBaseJour = (typeTarif === 'sans_chauffeur') ? tSans12 : tAvec12;
     } else {
-        if (typeTarif === 'sans_chauffeur') {
-            prixBaseJour = (dureeType === '12h') ? tSans12 : tSans24;
-        } else {
-            prixBaseJour = (dureeType === '12h') ? tAvec12 : tAvec24;
-        }
+        prixBaseJour = (typeTarif === 'sans_chauffeur') 
+            ? (dureeType === '12h' ? tSans12 : tSans24)
+            : (dureeType === '12h' ? tAvec12 : tAvec24);
     }
 
     let total = prixBaseJour * nbrJours;
-
-    // Option Chauffeur fixe 40.000 Ar/jour (si sans chauffeur sélectionné)
     let totalOptions = optLivraison + optRecuperation;
     if (typeTarif === 'sans_chauffeur' && optChauffeur) {
-        totalOptions += (40000 * nbrJours);
+        const prixOptChauffeur = currentCar.prix_option_chauffeur || 40000;
+        totalOptions += (prixOptChauffeur * nbrJours);
     }
 
     total += totalOptions;
 
-    // Mise à jour de l'affichage du récapitulatif
-    document.getElementById('recap-duree').textContent = `${nbrJours} jour(s) ${nbrJours > 3 ? '(Remise > 3j appliquée)' : ''}`;
-    document.getElementById('recap-formule').textContent = `${typeTarif === 'sans_chauffeur' ? 'Sans Chauffeur' : 'Avec Chauffeur'} (${formatPrix(prixBaseJour)}/j)`;
-    document.getElementById('recap-options').textContent = formatPrix(totalOptions);
-    document.getElementById('recap-total').textContent = formatPrix(total);
+    setText('recap-duree', `${nbrJours} jour(s) ${nbrJours > 3 ? '(Tarif dégressif)' : ''}`);
+    setText('recap-formule', `${typeTarif === 'sans_chauffeur' ? 'Sans Chauffeur' : 'Avec Chauffeur'} (${formatPrix(prixBaseJour)}/j)`);
+    setText('recap-options', formatPrix(totalOptions));
+    setText('recap-total', formatPrix(total));
 }
 
-// Soumission : Enregistrement Supabase + Ouverture WhatsApp
 async function soumettreReservationEtWhatsapp(e) {
     e.preventDefault();
 
@@ -196,24 +201,25 @@ async function soumettreReservationEtWhatsapp(e) {
     const nom = document.getElementById('resa-nom').value.trim();
     const prenom = document.getElementById('resa-prenom').value.trim();
     const tel = document.getElementById('resa-tel').value.trim();
-    const email = document.getElementById('resa-email').value.trim();
+    const email = document.getElementById('resa-email')?.value.trim() || '';
     const dateDebut = document.getElementById('resa-date-debut').value;
-    const heureDebut = document.getElementById('resa-heure-debut').value;
+    const heureDebut = document.getElementById('resa-heure-debut')?.value || '08:00';
     const dateFin = document.getElementById('resa-date-fin').value;
-    const heureFin = document.getElementById('resa-heure-fin').value;
+    const heureFin = document.getElementById('resa-heure-fin')?.value || '18:00';
     const typeTarif = document.getElementById('resa-type-tarif').value;
     const dureeType = document.getElementById('resa-duree-type').value;
-    const optChauffeur = document.getElementById('opt-chauffeur').checked;
-    const optLivraison = parseFloat(document.getElementById('opt-livraison').value) || 0;
-    const optRecuperation = parseFloat(document.getElementById('opt-recuperation').value) || 0;
+    const optChauffeur = document.getElementById('opt-chauffeur')?.checked || false;
+    
+    const rawLivraison = parseFloat(document.getElementById('opt-livraison')?.value);
+    const rawRecuperation = parseFloat(document.getElementById('opt-recuperation')?.value);
+    const optLivraison = isNaN(rawLivraison) ? 15000 : rawLivraison;
+    const optRecuperation = isNaN(rawRecuperation) ? 15000 : rawRecuperation;
 
     const refClient = genererRefClient(nom, prenom);
-    const refFacture = genererRefFacture(Math.floor(Math.random() * 899) + 100);
-
-    const prixTotalTxt = document.getElementById('recap-total').textContent;
+    const refFacture = genererRefFacture();
+    const prixTotalTxt = document.getElementById('recap-total').innerText;
 
     try {
-        // 1. Enregistrement dans Supabase
         await sb.from('clients').upsert([{ ref_client: refClient, nom: `${nom} ${prenom}`, tel: tel, email: email }], { onConflict: 'tel' });
 
         const { error } = await sb.from('reservations').insert([{
@@ -230,14 +236,13 @@ async function soumettreReservationEtWhatsapp(e) {
             option_chauffeur: optChauffeur,
             option_livraison: optLivraison,
             option_recuperation: optRecuperation,
-            montant_paye: 0,
+            paiement_montant_declare: 0,
             montant_total: parseFloat(prixTotalTxt.replace(/[^0-9]/g, '')),
             statut: 'en_attente'
         }]);
 
         if (error) throw error;
 
-        // 2. Construction du Message WhatsApp
         const msgWA = `*NOUVELLE RÉSERVATION - LOCATION TANA*
 ----------------------------------
 *Réf Facture :* ${refFacture}
@@ -249,10 +254,11 @@ async function soumettreReservationEtWhatsapp(e) {
 *Départ :* ${dateDebut} à ${heureDebut}
 *Retour :* ${dateFin} à ${heureFin}
 *Formule :* ${typeTarif === 'sans_chauffeur' ? 'Sans Chauffeur' : 'Avec Chauffeur'}
-*Option Chauffeur :* ${optChauffeur ? 'Oui (+40 000 Ar/j)' : 'Non'}
-*Livraison/Récupération :* ${optLivraison + optRecuperation} Ar
+*Option Chauffeur :* ${optChauffeur ? 'Oui' : 'Non'}
+*Frais Livraison :* ${optLivraison} Ar
+*Frais Récupération :* ${optRecuperation} Ar
 
-*PRIX TOTAL :* ${prixTotalTxt}
+*PRIX TOTAL ESTIMÉ :* ${prixTotalTxt}
 ----------------------------------
 _Réservation enregistrée sur le site web_`;
 
@@ -265,3 +271,7 @@ _Réservation enregistrée sur le site web_`;
         alert("Erreur lors de la réservation : " + err.message);
     }
 }
+
+window.ouvrirModalReservation = ouvrirModalReservation;
+window.calculerTarifEtVerifierDispo = calculerTarifEtVerifierDispo;
+window.soumettreReservationEtWhatsapp = soumettreReservationEtWhatsapp;
